@@ -1,5 +1,5 @@
 ## DEconvolution based on Regularized Matrix Completion algorithm (ENIGMA)
-![ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/main/figure1_new.png)
+![ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/main/main.png)
 
 ## ENIGMA
 ENIGMA has three main steps. First, ENIGMA requires cell type reference expression matrix (signature matrix), which could be derived from either FACS RNA-seq or scRNA-seq datasets through calculating the average expression value of each gene from each cell type. Previous researches have widely used reference matrix curated from different platforms, for instance, Newman et al. used LM22 immune signature matrix which
