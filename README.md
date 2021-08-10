@@ -24,6 +24,10 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_toy.html)
 
+## Install
+```
+devtools::install_github("WWXKenmo/ENIGMA")
+```
 ## Required Packages
 sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
 
