@@ -22,7 +22,7 @@ co-expression network to identify modules that relevant to phenotypes of interes
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_toy.html)
+* [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_toy2.html)
 
 ## Install
 ```
