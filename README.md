@@ -28,11 +28,13 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 ```
 devtools::install_github("WWXKenmo/ENIGMA")
 ```
+Please refer to the [document](https://enigma-docs.readthedocs.io/en/latest/) of ENIGMA for detailed guidence using ENIGMA as a R package. 
+
 ## Required Packages
 sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
 
 ## Note
-This is the primary version of ENIGMA
+This is the alpha version of ENIGMA
 
 ## Tutorial Dataset
-the datasets could be downloaded from this repository. (main branch:dataNSCLC.rds, tmp.rds; master branch: ref.rds)
+the datasets could be downloaded from this repository. (master branch)
