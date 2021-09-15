@@ -1,3 +1,16 @@
+## News
+### release v1.1
+1. Fixed the bugs in batch_correct
+2. Add new functions to re-normalized inferred CSE
+3. Update new tutorial
+
+User could install latest version ENIGMA through following command
+```
+install.packages("ENIGMA_v1.1.tar.gz",repos=NULL, type="source",INSTALL_opts=c("--no-multiarch"))
+```
+User could do benchmark through simulation, following this [code](https://github.com/WWXkenmo/ENIGMA/blob/main/cell_heterogeneity.R) to reproduce following figure
+![figure](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/overall.png)
+
 ## DEconvolution based on Regularized Matrix Completion algorithm (ENIGMA)
 ![ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/main/main.png)
 
@@ -22,8 +35,8 @@ co-expression network to identify modules that relevant to phenotypes of interes
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_toy2.html)
-
+* [Toy example for running ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
+* [Apply ENIGMA to resolve latent cell states](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
 ## Install
 ```
 devtools::install_github("WWXKenmo/ENIGMA")
