@@ -35,8 +35,8 @@ co-expression network to identify modules that relevant to phenotypes of interes
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [Toy example for running ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
-* [Apply ENIGMA to resolve latent cell states](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
+* [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
+* [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
 ## Install
 ```
 devtools::install_github("WWXKenmo/ENIGMA")
