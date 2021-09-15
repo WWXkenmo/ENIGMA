@@ -1,5 +1,9 @@
 library(splatter)
 library(scatter)
+library(cowplot)
+library(TCA)
+library(ENIGMA)
+library(TED)
 
 #Simulate profile with similar library size
 params <- newSplatParams(seed=1002)
@@ -87,7 +91,7 @@ H1 <- H1[,k]
 H1_array <- H1_array[,k,] 
 
 rownames(G) <- colnames(H1) <- paste0("gene",c(1:nrow(G)))
-
+colnames(G) <- paste0("Sample",1:ncol(G))
 ##load ENIGMA object and perform deconvolution
 library(scater)
 egm = create_ENIGMA(bulk = G, ref = t(H1), ref_type = "bulk", meta_ref = as.matrix(colnames(t(H1))))
@@ -96,7 +100,9 @@ egm@bulk <- G
 egm = get_cell_proportion(egm)
 plot_proportion(egm)
 egm = ENIGMA_L2_max_norm(egm, epsilon=0.001, alpha=0.7,
-                        beta=4500,tao_k=0.01,max.iter=1000,verbose=TRUE)
+                        beta=4500,tao_k=0.01,max.iter=2,verbose=TRUE,Normalize=FALSE)
+
+Fra_Simulate <- list(theta = egm@result_cell_proportion)
 
 enigma <- egm@result_CSE_normalized[,egm@result_CSE_normalized$cell_type %in% "cellType1"]
 enigma$Group <- label.c4				 
