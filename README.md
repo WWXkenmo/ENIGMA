@@ -51,3 +51,12 @@ This is the alpha version of ENIGMA
 
 ## Tutorial Dataset
 the datasets could be downloaded from this repository. (master branch)
+
+## Contact Author
+Author: Weixu Wang, Dr. Jun Yao, Prof. Ting Ni
+Report bugs by opening a new issue on this Github page
+Provide suggestions by sending email to maintainer!
+Maintainer: Weixu Wang (ken71198@hotmail.com)
+
+## Citation
+Wang W, Yao J, Wang Y, et al. Improved estimation of cell type-specific gene expression through deconvolution of bulk tissues with matrix completion[J]. bioRxiv, 2021.
