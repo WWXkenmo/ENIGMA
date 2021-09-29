@@ -54,8 +54,11 @@ the datasets could be downloaded from this repository. (master branch)
 
 ## Contact Author
 Author: Weixu Wang, Dr. Jun Yao, Prof. Ting Ni
+
 Report bugs by opening a new issue on this Github page
+
 Provide suggestions by sending email to maintainer!
+
 Maintainer: Weixu Wang (ken71198@hotmail.com)
 
 ## Citation
