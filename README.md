@@ -50,7 +50,7 @@ sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
 This is the alpha version of ENIGMA
 
 ## Tutorial Dataset
-the datasets could be downloaded from this repository. (master branch)
+the datasets could be downloaded from this repository. ([master branch](https://github.com/WWXkenmo/ENIGMA/tree/master))
 
 ## Contact Author
 Author: Weixu Wang, Dr. Jun Yao, Prof. Ting Ni
