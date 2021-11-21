@@ -100,7 +100,7 @@ egm@bulk <- G
 egm = get_cell_proportion(egm)
 plot_proportion(egm)
 egm = ENIGMA_L2_max_norm(egm, epsilon=0.001, alpha=0.7,
-                        beta=4500,tao_k=0.01,max.iter=2,verbose=TRUE,Normalize=FALSE)
+                        beta=4500,tao_k=0.01,max.iter=1000,verbose=TRUE)
 
 Fra_Simulate <- list(theta = egm@result_cell_proportion)
 
