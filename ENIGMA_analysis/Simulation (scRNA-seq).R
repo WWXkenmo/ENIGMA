@@ -1,6 +1,6 @@
 ##########################
 #load the required packages
-source("/mnt/data1/weixu/HiDe/ENIGMA.R")
+source("/Path/to/Data/ENIGMA.R")
 library(MIND)
 library(Biobase)
 library(Seurat)
@@ -8,7 +8,7 @@ library(MASS)
 
 ################Using HNSCC to reconsititute profile
 ##The HNSCC single cell RNA-seq data could downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE103322
-HNSCC <- read.table("/mnt/data1/weixu/HiDe/HNSCC/GSE103322_HNSCC_all_data.txt",header=TRUE,row.names=1,sep="\t")
+HNSCC <- read.table("/Path/to/Data/GSE103322_HNSCC_all_data.txt",header=TRUE,row.names=1,sep="\t")
 
 ###Processed scRNA-seq data
 celltype <- as.character(as.matrix(HNSCC[5,]))
@@ -58,15 +58,6 @@ for(i in names(table(patient.sub))){
 colnames(bulkSet_HNSCC) <- rownames(HNSCC_Fra)
 
 
-###################################################
-#####Generate noised bulk
-Bulk <- log2(bulkSet_HNSCC+1)
-noise <- t(matrix(rnorm(nrow(bulkSet_HNSCC)*ncol(bulkSet_HNSCC))*(mean(Bulk) / 2), ncol=ncol(bulkSet_HNSCC)))
-noise[noise<0] <- 0 
-Bulk <- Bulk + t(noise)
-Bulk <- 2^Bulk - 1
-
-
 ###Construct ground truth cell type specific expression profile
 celltype.sc <- celltype[patient %in% c("HNSCC","HNSCC16") == TRUE]
 P_HNSCC <- array(0, dim=c(nrow(bulkSet),ncol(bulkSet_HNSCC),ncol(HNSCC_Fra)),
@@ -93,41 +84,27 @@ colnames(profile_hnscc) <- names(table(celltype.sc))
 
 ###calculate cell type fractions matrix
 fra_HNSCC <- get_proportion(bulkSet_HNSCC,profile_hnscc)
-fra_HNSCC2 <- get_proportion(Bulk,profile_hnscc)
 ###Running ENIGMA
 res_alg_all_HNSCC <- cell_deconvolve(X=log2(bulkSet_HNSCC+1),
                     theta=fra_HNSCC$theta,
 					R=log2(profile_hnscc+1),
 					epsilon=0.001,
 					alpha=0.5,
-					beta=10000,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
-res_alg_all_HNSCC_noise <- cell_deconvolve(X=log2(Bulk+1),
-                    theta=fra_HNSCC2$theta,
-					R=log2(profile_hnscc+1),
-					epsilon=0.001,
-					alpha=0.5,
-					beta=10000,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
+					beta=0.1,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
+
 ###Running ENIGMA (trace norm)					
-res_alg_all_HNSCC2 <- cell_deconvolve_trace_admm_true_final(O = as.matrix(log2(bulkSet_HNSCC+1)),
+res_alg_all_HNSCC2 <- cell_deconvolve_trace(O = as.matrix(log2(bulkSet_HNSCC+1)),
                                                   theta=fra_HNSCC$theta,
                                                   R=log2(profile_hnscc[rownames(bulkSet_HNSCC),]+1),
                                                   epsilon=0.001,
-                                                  alpha=0.5,beta=30,
+                                                  alpha=0.5,beta=30,solver="admm",gamma=1,
                                                   verbose=TRUE,max.iter = 500,Normalize=FALSE)
-res_alg_all_HNSCC2_noise <- cell_deconvolve_trace_admm_true_final(O = as.matrix(log2(Bulk+1)),
-                                                  theta=fra_HNSCC2$theta,
-                                                  R=log2(profile_hnscc[rownames(bulkSet_HNSCC),]+1),
-                                                  epsilon=0.001,
-                                                  alpha=0.5,beta=30,
-                                                  verbose=TRUE,max.iter = 500,Normalize=FALSE)
+
 ###Running TCA
 tca.mdl <- tca(X = as.matrix(log2(bulkSet_HNSCC+1)), W = fra_HNSCC$theta, C1 = NULL, C2 = NULL,
                 parallel = TRUE,num_cores=4)
 TCA_HNSCC <- tensor(X = as.matrix(log2(bulkSet_HNSCC+1)), tca.mdl)		
 
-tca.mdl2 <- tca(X = as.matrix(log2(Bulk+1)), W = fra_HNSCC2$theta, C1 = NULL, C2 = NULL,
-                parallel = TRUE,num_cores=4)
-TCA_HNSCC2 <- tensor(X = as.matrix(log2(Bulk+1)), tca.mdl2)	
 ###############################################################################
 ###Running bMIND
 ###rename cell names
@@ -136,15 +113,6 @@ cellName = gsub(' ', '', cellName)
 theta = fra_HNSCC$theta
 colnames(theta) = cellName
 deconv_HNSCC = bMIND2(log2(bulkSet_HNSCC+1),ncore = 3, frac = theta, profile = log2(profile_hnscc[rownames(bulkSet_HNSCC),]+1), noRE = FALSE)
-
-###############################################################################
-###Running bMIND
-###rename cell names
-cellName = colnames(fra_HNSCC2$theta)
-cellName = gsub(' ', '', cellName)
-theta = fra_HNSCC2$theta
-colnames(theta) = cellName
-deconv_HNSCC2 = bMIND2(log2(Bulk+1),ncore = 3, frac = theta, profile = log2(profile_hnscc[rownames(bulkSet_HNSCC),]+1), noRE = FALSE)
 
 ############################################
 ##perform evaluation
@@ -263,241 +231,13 @@ p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
 p
 dev.off()
 
-save(bulkSet_HNSCC,profile_hnscc,P_HNSCC,file="/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/GeneSampleCorrelation2/HNSCC_simulate_benchmark.Rdata")
-
-#####################################################################
-dimnames(deconv_HNSCC2$A)[[2]] <- colnames(profile_hnscc)
-HiDe <- NULL
-HiDe2 <- NULL
-bMIND <- NULL
-TCA <- NULL
-celltype <- NULL
-bulk_exp <- NULL
-reference <- NULL
-for(ct in colnames(deconv_HNSCC2$A[,,1])){
-CSE_pre2 <- deconv_HNSCC2$A[,ct,]
-CSE <- P_HNSCC[rownames(profile_hnscc),,ct]
-CSE_pre <- res_alg_all_HNSCC_noise$X_k[,,ct]
-CSE_pre_trace <- res_alg_all_HNSCC2_noise$X_k[rownames(CSE_pre2),,ct]
-CSE_pre3 <- TCA_HNSCC2[[which(colnames(profile_hnscc) == ct)]]
-cor_pre <- NULL
-cor_pre2 <- NULL
-cor_pre3 <- NULL
-cor_pre4 <- NULL
-cor_bulk <- NULL
-cor_ref <- NULL
-for(i in which(fra_HNSCC$theta[,ct]!=0)){
- cor_pre <- c(cor_pre, cor(log2(CSE[,i]+1),CSE_pre[,i],method="sp"))
- cor_pre2 <- c(cor_pre2, cor(log2(CSE[,i]+1),CSE_pre2[,i],method="sp"))
- cor_pre3 <- c(cor_pre3, cor(log2(CSE[,i]+1),CSE_pre3[,i],method="sp"))
- cor_pre4 <- c(cor_pre4, cor(log2(CSE[,i]+1),CSE_pre_trace[,i],method="sp"))
- cor_bulk <- c(cor_bulk, cor(log2(CSE[,i]+1),as.matrix(bulkSet_HNSCC)[rownames(CSE),i],method="sp"))
- cor_ref <- c(cor_ref, cor(log2(CSE[,i]+1),profile_hnscc[rownames(CSE),ct],method="sp"))
-}
-HiDe <- c(HiDe,cor_pre)
-bMIND <- c(bMIND,cor_pre2)
-TCA <- c(TCA,cor_pre3)
-HiDe2 <- c(HiDe2,cor_pre4)
-bulk_exp <- c(bulk_exp, cor_bulk)
-reference <- c(reference, cor_ref)
-celltype <- c(celltype,rep(ct,length(cor_pre)))
-}
-
-dat <- data.frame(method=c(rep("ENIGMA",length(HiDe)),
-                           rep("ENIGMA(trace)",length(HiDe2)),
-                           rep("bMIND",length(bMIND)),
-						   rep("TCA",length(TCA)),
-						   rep("bulk",length(bulk_exp)),
-						   rep("reference",length(reference))),
-				  performance=c(HiDe,
-				                HiDe2,
-				                bMIND,
-								TCA,
-								bulk_exp,
-								reference),
-				  celltype=c(rep(celltype,6)))
-dat_sample <- dat
-dat$method <- factor(dat$method,levels=c("reference","bulk","TCA","bMIND","ENIGMA(trace)","ENIGMA"))
-tiff("performance_compare_spearman_HNSCC(sample,noise).tiff",res=300,height=1000,width=2500)
-p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
-    geom_boxplot()+theme_minimal()+labs(y="Correlation per sample")+facet_grid(~celltype, scales = "free_x") + 
-    theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
-    mytheme + theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))+NoLegend()+ylim(c(0,1))
-p
-dev.off()
-
-
-HiDe <- NULL
-HiDe2 <- NULL
-bMIND <- NULL
-TCA <- NULL
-celltype <- NULL
-bulk_exp <- NULL
-for(ct in colnames(deconv_HNSCC2$A[,,1])){
-CSE_pre2 <- deconv_HNSCC2$A[rownames(profile_hnscc),ct,]
-CSE <- P_HNSCC[rownames(profile_hnscc),,ct]
-CSE_pre <- res_alg_all_HNSCC_noise$X_k[rownames(profile_hnscc),,ct]
-CSE_pre_trace <- res_alg_all_HNSCC2_noise$X_k[rownames(CSE_pre2),,ct]
-CSE_pre3 <- TCA_HNSCC2[[which(colnames(profile_hnscc) == ct)]]
-cor_pre <- NULL
-cor_pre2 <- NULL
-cor_pre3 <- NULL
-cor_pre4 <- NULL
-cor_bulk <- NULL
-for(i in rownames(profile_hnscc)){
- cor_pre <- c(cor_pre, cor(log2(CSE[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),CSE_pre[i,which(fra_HNSCC2$theta[,ct]!=0)],method="sp"))
- cor_pre2 <- c(cor_pre2, cor(log2(CSE[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),CSE_pre2[i,which(fra_HNSCC2$theta[,ct]!=0)],method="sp"))
- cor_pre3 <- c(cor_pre3, cor(log2(CSE[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),CSE_pre3[i,which(fra_HNSCC2$theta[,ct]!=0)],method="sp"))
- cor_pre4 <- c(cor_pre4, cor(log2(CSE[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),CSE_pre_trace[i,which(fra_HNSCC2$theta[,ct]!=0)],method="sp"))
- cor_bulk <- c(cor_bulk, cor(log2(CSE[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),log2(as.matrix(bulkSet_HNSCC)[i,which(fra_HNSCC2$theta[,ct]!=0)]+1),method="sp"))
-}
-HiDe <- c(HiDe,cor_pre)
-bMIND <- c(bMIND,cor_pre2)
-TCA <- c(TCA,cor_pre3)
-HiDe2 <- c(HiDe2,cor_pre4)
-bulk_exp <- c(bulk_exp, cor_bulk)
-celltype <- c(celltype,rep(ct,length(cor_pre)))
-}
-
-
-dat <- data.frame(method=c(rep("ENIGMA",length(HiDe)),
-                           rep("ENIGMA(trace)",length(HiDe2)),
-                           rep("bMIND",length(bMIND)),
-						   rep("TCA",length(TCA)),
-						   rep("Bulk",length(bulk_exp))),
-				  performance=c(HiDe,
-				                HiDe2,
-				                bMIND,
-								TCA,
-								bulk_exp),
-				  celltype=c(rep(celltype,5)))
-dat$method <- factor(dat$method,levels=c("Bulk","TCA","bMIND","ENIGMA(trace)","ENIGMA"))
-dat_genes <- dat
-tiff("performance_compare_spearman_HNSCC(gene,noise).tiff",res=300,height=1000,width=2500)
-p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
-    geom_boxplot()+theme_minimal()+labs(y="Correlation per sample")+facet_grid(~celltype, scales = "free_x") + 
-    theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
-    mytheme + theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))+NoLegend()
-p
-dev.off()
-
-save(dat_sample,dat_genes,Bulk,profile_hnscc,P_HNSCC,file="HNSCC_simulate_benchmark(noise).Rdata")
-#####################################################################
-##Sample_noise file
-HiDe <- NULL
-HiDe2 <- NULL
-bMIND <- NULL
-TCA <- NULL
-celltype <- NULL
-bulk_exp <- NULL
-reference <- NULL
-for(ct in colnames(deconv_HNSCC2$A[,,1])){
-CSE_pre2 <- deconv_HNSCC2$A[,ct,]
-CSE <- P_HNSCC[rownames(profile_hnscc),,ct]
-CSE_pre <- res_alg_all_HNSCC_noise$X_k[,,ct]
-CSE_pre_trace <- res_alg_all_HNSCC2_noise$X_k[rownames(CSE_pre2),,ct]
-CSE_pre3 <- TCA_HNSCC2[[which(colnames(profile_hnscc) == ct)]]
-cor_pre <- NULL
-cor_pre2 <- NULL
-cor_pre3 <- NULL
-cor_pre4 <- NULL
-cor_bulk <- NULL
-cor_ref <- NULL
-for(i in which(fra_HNSCC$theta[,ct]!=0 & fra_HNSCC2$theta[,ct]!=0)){
- cor_pre <- c(cor_pre, cor(log2(CSE[,i]+1),CSE_pre[,i],method="sp"))
- cor_pre2 <- c(cor_pre2, cor(log2(CSE[,i]+1),CSE_pre2[,i],method="sp"))
- cor_pre3 <- c(cor_pre3, cor(log2(CSE[,i]+1),CSE_pre3[,i],method="sp"))
- cor_pre4 <- c(cor_pre4, cor(log2(CSE[,i]+1),CSE_pre_trace[,i],method="sp"))
- cor_bulk <- c(cor_bulk, cor(log2(CSE[,i]+1),as.matrix(bulkSet_HNSCC)[rownames(CSE),i],method="sp"))
- cor_ref <- c(cor_ref, cor(log2(CSE[,i]+1),profile_hnscc[rownames(CSE),ct],method="sp"))
-}
-HiDe <- c(HiDe,cor_pre)
-bMIND <- c(bMIND,cor_pre2)
-TCA <- c(TCA,cor_pre3)
-HiDe2 <- c(HiDe2,cor_pre4)
-bulk_exp <- c(bulk_exp, cor_bulk)
-reference <- c(reference, cor_ref)
-celltype <- c(celltype,rep(ct,length(cor_pre)))
-}
-
-dat <- data.frame(method=c(rep("ENIGMA",length(HiDe)),
-                           rep("ENIGMA(trace)",length(HiDe2)),
-                           rep("bMIND",length(bMIND)),
-						   rep("TCA",length(TCA)),
-						   rep("bulk",length(bulk_exp)),
-						   rep("reference",length(reference))),
-				  performance=c(HiDe,
-				                HiDe2,
-				                bMIND,
-								TCA,
-								bulk_exp,
-								reference),
-				  celltype=c(rep(celltype,6)))
-dat_sample_noise <- dat
-
-
-
-
-
-
-HiDe <- NULL
-HiDe2 <- NULL
-bMIND <- NULL
-TCA <- NULL
-celltype <- NULL
-bulk_exp <- NULL
-reference <- NULL
-for(ct in colnames(deconv_HNSCC$A[,,1])){
-CSE_pre2 <- deconv_HNSCC$A[,ct,]
-CSE <- P_HNSCC[rownames(profile_hnscc),,ct]
-CSE_pre <- res_alg_all_HNSCC$X_k[,,ct]
-CSE_pre_trace <- res_alg_all_HNSCC2$X_k[rownames(CSE_pre2),,ct]
-CSE_pre3 <- TCA_HNSCC[[which(colnames(profile_hnscc) == ct)]]
-cor_pre <- NULL
-cor_pre2 <- NULL
-cor_pre3 <- NULL
-cor_pre4 <- NULL
-cor_bulk <- NULL
-cor_ref <- NULL
-for(i in which(fra_HNSCC$theta[,ct]!=0 & fra_HNSCC2$theta[,ct]!=0)){
- cor_pre <- c(cor_pre, cor(log2(CSE[,i]+1),CSE_pre[,i],method="sp"))
- cor_pre2 <- c(cor_pre2, cor(log2(CSE[,i]+1),CSE_pre2[,i],method="sp"))
- cor_pre3 <- c(cor_pre3, cor(log2(CSE[,i]+1),CSE_pre3[,i],method="sp"))
- cor_pre4 <- c(cor_pre4, cor(log2(CSE[,i]+1),CSE_pre_trace[,i],method="sp"))
- cor_bulk <- c(cor_bulk, cor(log2(CSE[,i]+1),as.matrix(bulkSet_HNSCC)[rownames(CSE),i],method="sp"))
- cor_ref <- c(cor_ref, cor(log2(CSE[,i]+1),profile_hnscc[rownames(CSE),ct],method="sp"))
-}
-HiDe <- c(HiDe,cor_pre)
-bMIND <- c(bMIND,cor_pre2)
-TCA <- c(TCA,cor_pre3)
-HiDe2 <- c(HiDe2,cor_pre4)
-bulk_exp <- c(bulk_exp, cor_bulk)
-reference <- c(reference, cor_ref)
-celltype <- c(celltype,rep(ct,length(cor_pre)))
-}
-
-dat <- data.frame(method=c(rep("ENIGMA",length(HiDe)),
-                           rep("ENIGMA(trace)",length(HiDe2)),
-                           rep("bMIND",length(bMIND)),
-						   rep("TCA",length(TCA)),
-						   rep("bulk",length(bulk_exp)),
-						   rep("reference",length(reference))),
-				  performance=c(HiDe,
-				                HiDe2,
-				                bMIND,
-								TCA,
-								bulk_exp,
-								reference),
-				  celltype=c(rep(celltype,6)))
-dat_sample <- dat
-save(dat_sample,dat_sample_noise,file="noise_sample_assessing.Rdata")
-
+save(bulkSet_HNSCC,profile_hnscc,P_HNSCC,file="/Path/to/Data/HNSCC_simulate_benchmark.Rdata")
 ############################################################
 #Simulation code of melanoma
 ######################################################################
 ##Running the melanoma
-melanoma <- read.table("/mnt/data1/weixu/HiDe/GSE72056_melanoma_single_cell_revised_v2.txt",sep="\t",header=TRUE)
-sample <- read.csv("/mnt/data1/weixu/HiDe/sample.csv",row.names=1,stringsAsFactors=FALSE)
+melanoma <- read.table("/Path/to/Data/GSE72056_melanoma_single_cell_revised_v2.txt",sep="\t",header=TRUE)
+sample <- read.csv("/Path/to/Data/sample.csv",row.names=1,stringsAsFactors=FALSE)
 patients.id <- sample[,1]
 patients.id <- strsplit(patients.id,split="[_]")
 patients <- rep("empty",length(patients.id))
@@ -622,13 +362,13 @@ res_alg_all_melanoma <- cell_deconvolve(X=bulk,
 					R=profileMat,
 					epsilon=0.001,
 					alpha=0.5,
-					beta=10000,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
+					beta=0.1,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
 					
 res_alg_all_melanoma2 <- cell_deconvolve_trace(O = as.matrix(bulk),
                                                   theta=fra_melanoma$theta,
                                                   R=profileMat,
                                                   epsilon=0.0001,
-                                                  alpha=0.5,beta=30,
+                                                  alpha=0.5,beta=30,method="admm",gamma=1,
                                                   verbose=TRUE,max.iter = 100)
 dimnames(deconv_melanoma$A)[[2]] <- colnames(profileMat)
 HiDe <- NULL
@@ -745,7 +485,7 @@ p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
     geom_boxplot()+theme_minimal()+labs(y="Correlation per gene")
 p
 dev.off()
-save(dat_sample,dat_gene,file="melanoma_simulate_benchmark.Rdata")
+save(dat_sample,dat_gene,file="/Path/to/Data/melanoma_simulate_benchmark.Rdata")
 ########################################################################################################
 
 
