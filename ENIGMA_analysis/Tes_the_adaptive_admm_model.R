@@ -1,5 +1,9 @@
 #################################################
 source("/path/to/save/Data/ENIGMA.R")
+source("/path/to/save/Data/DEG_analysis_uile_function.R")
+library(SingleCellExperiment)
+library(scater)
+
 ######load the cell states infor
 Bulk <- readRDS("/path/to/save/Data/Bulk.rds")
 Reference <- readRDS("/path/to/save/Data/Reference.rds")
