@@ -431,7 +431,7 @@ p
 dev.off()
 
 
-save(bulkSet_melanoma,profile_melanoma,P_melanoma,file="/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/GeneSampleCorrelation2/melanoma_simulate_benchmark.Rdata")
+save(bulkSet_melanoma,profile_melanoma,P_melanoma,file="/Path/to/Data/melanoma_simulate_benchmark.Rdata")
 ###############################################################
 ###We only look the gene level correlation to the samples which estimation sample fractions are not zero
 HiDe <- NULL
