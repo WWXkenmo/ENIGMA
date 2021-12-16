@@ -19,7 +19,6 @@ for(i in 1:nrow(H2)){
     DEG_list[[i]] <- DEG_id * sign(add) ## generate the DEG list
     #seq <- seq[seq %in% DEG_id == FALSE]
 }
-DEG_list_all[[nround]] <- DEG_list
 
 # cell frequency matrix per sample
 cc <- matrix(runif(p*k), ncol=k)
