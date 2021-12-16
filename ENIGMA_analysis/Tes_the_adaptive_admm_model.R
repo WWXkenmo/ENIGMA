@@ -1,9 +1,9 @@
 #################################################
-source("/mnt/data1/weixu/HiDe/revised/ENIGMA.R")
+source("/path/to/save/Data/ENIGMA.R")
 ######load the cell states infor
-Bulk <- readRDS("/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/CellStateIdentification/Bulk.rds")
-Reference <- readRDS("/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/CellStateIdentification/Reference.rds")
-label <- readRDS("/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/CellStateIdentification/CellLabel.rds")
+Bulk <- readRDS("/path/to/save/Data/Bulk.rds")
+Reference <- readRDS("/path/to/save/Data/Reference.rds")
+label <- readRDS("/path/to/save/Data/CellLabel.rds")
 
 Frac_Simulate <- get_proportion(Bulk, Reference)
 
@@ -41,10 +41,10 @@ print(ARI)
 ARI_enigma <- c(ARI_enigma,ARI)
 }
 p2 <- plotTSNE(enigma_trace2, colour_by="Group",point_size=3)
-png("/mnt/data1/weixu/HiDe/revised/TraceNorm_Adaptive/CellType1.png",res=300,height=1500,width=1500)
+png("/path/to/save/Data/CellType1.png",res=300,height=1500,width=1500)
 p1
 dev.off()
-png("/mnt/data1/weixu/HiDe/revised/TraceNorm_Adaptive/CellType3.png",res=300,height=1500,width=1500)
+png("/path/to/save/Data/CellType3.png",res=300,height=1500,width=1500)
 p2
 dev.off()
 #######################################################
@@ -52,7 +52,7 @@ dev.off()
 
 ES <- c(1.8,2.4,3,3.6,4.2,4.8)
 for(es in 1:length(ES)){
-load(paste("/mnt/data1/weixu/HiDe/resCompare_bi_",ES[es],".Rdata",sep=""))
+load(paste("/path/to/save/Data/resCompare_bi_",ES[es],".Rdata",sep=""))
 ##Rerunning TCA, bMIND and ENIGMA
 ##Runing TCA
 library(MASS)
@@ -97,7 +97,7 @@ Tab <- rbind(Tab,T)
 }
 Tab <- as.data.frame(Tab)
 colnames(Tab) <- c("AUPRC","Method","EffectiveSize")
-mytheme <- readRDS("/mnt/data1/weixu/HiDe/revised/Model_Compare/DataSet/GeneSampleCorrelation/file/mytheme.rds")
+mytheme <- readRDS("/path/to/save/Data/mytheme.rds")
 Tab$AUPRC <- as.numeric(as.matrix(Tab$AUPRC))
 p_boxplot <- Tab %>% 
     mutate(EffectiveSize=paste0("SNR=", EffectiveSize)) %>% 
@@ -108,7 +108,7 @@ p_boxplot <- Tab %>%
     theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
     theme(legend.title = element_text(size = 12, color = "black", family = "Arial"), legend.text = element_text(size = 12, color = "black", family = "Arial")) + 
     theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))
-png("/mnt/data1/weixu/HiDe/revised/TraceNorm_Adaptive/boxplot_DEG.png",res=300,height=1200,width=2400)
+png("/path/to/save/Data/boxplot_DEG.png",res=300,height=1200,width=2400)
 p_boxplot
 dev.off()
 
