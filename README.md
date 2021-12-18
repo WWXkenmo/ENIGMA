@@ -53,7 +53,7 @@ This is the alpha version of ENIGMA
 the datasets could be downloaded from this repository. ([The link to datasets](https://github.com/WWXkenmo/ENIGMA/tree/master))
 
 ## Contact Author
-Author: Weixu Wang, Dr. Jun Yao, Prof. Ting Ni
+Author: Weixu Wang, Xiaolan Zhou, Dr. Jun Yao, Prof. Ting Ni
 
 Report bugs by opening a new issue on this Github page
 
