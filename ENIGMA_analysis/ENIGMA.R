@@ -391,12 +391,16 @@ SVT_RM_value <- function(Mat){
 
 
 ###################################S_mode_correction##################################################
-require("sva")
-require("purrr")
 
-remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_sub_ct=NULL, n_pseudo_bulk=1000) {
-    cat(date(), "generating pseudo bulk... \n")
-    pseudo_bulk_main_ct = generate_pseudo_bulk_from_scRNA( ref_eset, varname_main_ct, n = n_pseudo_bulk )
+remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_sub_ct=NULL, n_pseudo_bulk=1000,ncores=8) {
+    require("doParallel")
+	require("sva")
+	require("nnls")
+	require("tibble")
+	require("purrr")
+	
+	cat(date(), "generating pseudo bulk... \n")
+    pseudo_bulk_main_ct = generate_pseudo_bulk_from_scRNA( ref_eset, varname_main_ct, n = n_pseudo_bulk,ncores = ncores )
     colnames(pseudo_bulk_main_ct$mat) = paste(varname_main_ct, seq_len(ncol(pseudo_bulk_main_ct$mat)), sep = "_")
     
     if(is.null(varnames_sub_ct)) pseudo_bulk_subs = NULL
@@ -441,7 +445,13 @@ remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_s
 }
 
 
-generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000) {
+generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000,ncores=ncores) {
+    require("doParallel")
+	require("sva")
+	require("nnls")
+	require("tibble")
+	require("purrr")
+	
     frac_init = table( pData(ref_eset)[,ct_varname] )/nrow(pData(ref_eset))
     
     frac = map2_df(frac_init, frac_init*2, rnorm, n=n) %>% sapply(function(x) x)
@@ -452,20 +462,35 @@ generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000) {
     # normalization
     frac <- t(t(frac) %*% diag(1/rowSums(frac)))
     
-    M_star <- NULL
-    for(i in 1:nrow(frac)){
-        Ma = lapply( pData(ref_eset)[,ct_varname] %>% unique, function(ct) {
+    colnames(frac) <- names(table( pData(ref_eset)[,ct_varname] ))
+    
+	bulk_per_sample = function(x,ct_varname,ref_eset){
+	require("magrittr")
+	require("Biobase")
+	        Ma = lapply( pData(ref_eset)[,ct_varname] %>% unique, function(ct) {
             sample_ids = subset( pData(ref_eset), eval(parse( text = paste0(ct_varname, "==\"", ct, "\"") )) ) %>%
                 rownames %>%
-                sample( 1000*frac[i,ct], replace = TRUE )
+                sample( 1000*x[ct], replace = TRUE )
             exprs(ref_eset)[,colnames(ref_eset) %in% sample_ids]
         } ) %>%
             do.call(cbind, .)
-        
-        M_star <- cbind(M_star,rowSums(Ma))
-    }
-    
-    return(list( frac=frac, mat=M_star ))
+			
+			Ma = rowSums(Ma)
+			Ma
+	}
+	##
+	writeLines( paste("using ",ncores," cores...",sep=""))
+	cl = makeCluster(ncores)
+    registerDoParallel(cl)
+    getDoParWorkers()
+    #envir %>% appendEnv(parent_envir)
+    ns = nrow(frac)
+	result = foreach(j = 1:ns, .errorhandling = 'pass') %dopar% {
+	bulk_per_sample(frac[j,],ref_eset = ref_eset,ct_varname = ct_varname)
+	}
+	result = do.call(cbind, result)
+    stopCluster(cl)
+    return(list( frac=frac, mat=result ))
 }
 
 
@@ -595,7 +620,7 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
                 dP <- derive_P2(X, theta,P_old,R,alpha)
                 for(i in 1:ncol(theta)){
                     P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta*10^5)
-                    P_old_new[,,i] <- P_hat
+					P_old_new[,,i] <- P_hat
                     
                     ratio <- c(ratio, sum( (P_hat-P_old[,,i])^2 ))
                 }
@@ -654,7 +679,13 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
             for(k in 1:dim(X_k_m)[3]){
                 exp <- X_k_m[,,k]
                 exp.scale <- t(apply(exp,1,scale))
-                PC <- svd(exp.scale)$v[,1]
+				###chose the PC with the highest correlation with cell type fractions
+				d <- sqrt(svd(exp.scale)$d)
+				d <- d / sum(d)
+				prob_d <- NULL;for(i in 1:length(d)) prob_d <- c(prob_d, sum(d[1:i]))
+                PC <- svd(exp.scale)$v[,1:which(prob_d>0.8)[1]]
+			    pc_cor <- apply(PC,2,function(x){cor(x,theta[,k],method="sp")})
+				PC <- PC[,which.max(abs(pc_cor))]
                 the <- (exp %*% as.matrix(PC) - length(PC) * mean(PC) * rowMeans(exp)) / (sum(PC^2) - length(PC)*mean(PC)^2)
                 exp.norm <- exp - as.matrix(the) %*% t(as.matrix(PC))
                 X_k_norm[,,k] <- exp.norm
@@ -944,7 +975,13 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
             for(k in 1:dim(X_k_m)[3]){
                 exp <- X_k_m[,,k]
                 exp.scale <- t(apply(exp,1,scale))
-                PC <- svd(exp.scale)$v[,1]
+				###chose the PC with the highest correlation with cell type fractions
+				d <- sqrt(svd(exp.scale)$d)
+				d <- d / sum(d)
+				prob_d <- NULL;for(i in 1:length(d)) prob_d <- c(prob_d, sum(d[1:i]))
+                PC <- svd(exp.scale)$v[,1:which(prob_d>0.8)[1]]
+			    pc_cor <- apply(PC,2,function(x){cor(x,theta[,k],method="sp")})
+				PC <- PC[,which.max(abs(pc_cor))]
                 the <- (exp %*% as.matrix(PC) - length(PC) * mean(PC) * rowMeans(exp)) / (sum(PC^2) - length(PC)*mean(PC)^2)
                 exp.norm <- exp - as.matrix(the) %*% t(as.matrix(PC))
                 X_k_norm[,,k] <- exp.norm
