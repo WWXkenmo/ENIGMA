@@ -1,3 +1,5 @@
+#####Compare ADMM, proximal point, and gradient renormalized proximal point method
+##### implement ADMM based L2 max norm model (cell_deconvolve_admm_L2max). 
 cell_deconvolve_admm_L2max <- function(O, theta, R, alpha=0.5,beta=5,gamma=1,epsilon=0.001,max.iter=100,verbose=FALSE,X_int=NULL,loss_his=TRUE){
     if(is.null(X_int)){
         X = array(0,
@@ -42,7 +44,7 @@ cell_deconvolve_admm_L2max <- function(O, theta, R, alpha=0.5,beta=5,gamma=1,eps
             for(j in 1:ncol(theta)){
                 #a <- as.matrix(a.m[j,])
                 X_k_1[,,j] <- updated_X[,,j]
-                Y_k_1[,,j] <- t(squash(t(A_k[,,j]/gamma + X_k_1[,,j]),(beta*10^2)/gamma))
+                Y_k_1[,,j] <- t(squash(t(A_k[,,j]/gamma + X_k_1[,,j]),(beta)/gamma))
                 
                 A_k_1[,,j] <- A_k[,,j] + gamma*(X_k_1[,,j]-Y_k_1[,,j])
                 ratio <- c(ratio, sum( (X_k_1[,,j]-X_k[,,j])^2 ))
@@ -64,8 +66,9 @@ cell_deconvolve_admm_L2max <- function(O, theta, R, alpha=0.5,beta=5,gamma=1,eps
 }
 ##################################################################################						   
 #########################################################################################
-####
-#L2-max Norm proximal point solve compare
+#### To compare gradient renormalized model and non-renormalized model, we need to make sure the gradient size (dP1 and dP2) is comparable.
+#### We chosed the gradient size for gradient renormalized model as 200, for more detail of parameter setting, please check gradient_size_setting.R
+
 cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon=0.001,max.iter=1000,verbose=FALSE,infer=FALSE,loss_his = TRUE,pos=TRUE,pre.process="log",Normalize=TRUE,Norm.method = "PC"){
     # unify geneid between X and R
     geneid = intersect( rownames(X), rownames(R) )
@@ -99,7 +102,7 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
         ratio <- NULL
         dP <- derive_P2(X, theta,P_old,R,alpha)
         for(i in 1:ncol(theta)){
-            P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta*10^2)
+            P_hat <- proximalpoint(P_old[,,i], tao_k,dP[,,i],beta) 
             P_old_new[,,i] <- P_hat
             
             ratio <- c(ratio, sum( (P_hat-P_old[,,i])^2 ))
@@ -220,8 +223,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
-    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
+    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2 ## renormalized gradient with new gradient size = 200
+    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2 ## renormalized gradient with new gradient size = 200 
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -241,7 +244,7 @@ ENIGMA_l2max_reG <- cell_deconvolve(X=as.matrix(Bulk),
                                     R=Reference,
                                     epsilon=0.001,
                                     alpha=0.1,
-                                    beta=0.5,tao_k=1,max.iter = 1000,verbose=TRUE,Normalize=FALSE,pos = FALSE)
+                                    beta=50,tao_k=1,max.iter = 1000,verbose=TRUE,Normalize=FALSE,pos = FALSE)
 									
 derive_P2 <- function(X, theta, P_old,R,alpha){
     ## P_old: a tensor variable with three dimensions
@@ -291,28 +294,28 @@ ENIGMA_l2max <- cell_deconvolve(X=as.matrix(Bulk),
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
-                                    beta=0.5,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 ENIGMA_l2max_miu5 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
-                                    beta=0.05,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
+                                    beta=5,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 ENIGMA_l2max_miu1 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
-                                    beta=0.01,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)	
+                                    beta=1,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)	
 
 ENIGMA_l2max_miu10 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
-                                    beta=0.1,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
+                                    beta=10,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 ENIGMA_l2max_miu0 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
@@ -325,25 +328,25 @@ ENIGMA_admm_l2max_miu1 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=0.01,gamma=1,
+                                                                   alpha=0.1,beta=1,gamma=1,
                                                                    verbose=TRUE,max.iter = 1000)
 ENIGMA_admm_l2max_miu5 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=0.05,gamma=1,
+                                                                   alpha=0.1,beta=5,gamma=1,
                                                                    verbose=TRUE,max.iter = 1000)
 ENIGMA_admm_l2max_miu10 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=0.1,gamma=1,
+                                                                   alpha=0.1,beta=1,gamma=1,
                                                                    verbose=TRUE,max.iter = 1000)
 ENIGMA_admm_l2max_miu50 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=0.5,gamma=1,
+                                                                   alpha=0.1,beta=5,gamma=1,
                                                                    verbose=TRUE,max.iter = 1000)																   
 LossList <- list(`Proximal Point(step size = 1, miu=50)` = ENIGMA_l2max$loss_history,
                  `Proximal Point(step size = 1, Gradient Renormalization,miu=50)` = ENIGMA_l2max_reG$loss_history,
