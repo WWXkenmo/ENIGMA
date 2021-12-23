@@ -92,6 +92,7 @@ H1_array <- H1_array[,k,]
 
 rownames(G) <- colnames(H1) <- paste0("gene",c(1:nrow(G)))
 colnames(G) <- paste0("Sample",1:ncol(G))
+rownames(H1) <- colnames(cc)
 ##load ENIGMA object and perform deconvolution
 library(scater)
 egm = create_ENIGMA(bulk = G, ref = t(H1), ref_type = "bulk", meta_ref = as.matrix(colnames(t(H1))))
