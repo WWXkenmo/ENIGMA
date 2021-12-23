@@ -238,7 +238,12 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
     dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
     return(dP)
 }
-
+#########################################
+###load DEG example data
+load("/path/to/DEG_example_data/DEG_example_data.Rdata")
+Frac <- get_proportion(Bulk, Reference)
+y <- gl(2, 100/2)
+			   
 ENIGMA_l2max_reG <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
