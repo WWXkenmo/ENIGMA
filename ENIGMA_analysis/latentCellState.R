@@ -193,7 +193,6 @@ TCA_res2 <- tensor(X = (as.matrix(sqrt(PseudoBulk))), tca.mdl)
 
 TCA <- SingleCellExperiment(assays=list(logcounts = (TCA_res2[[1]])))
 TCA$Group <- idCell$Fibroblast			 
-TCA <- TCA[Frac$theta[,1]>0.05]
 TCA <- runPCA(TCA)
 TCA <- runUMAP(TCA,dimred="PCA",n_dimred=10)
 png("tca.png",res=300,height=1500,width=1500)
@@ -218,13 +217,11 @@ egm_trace <- cell_deconvolve_trace(O = as.matrix(sqrt(PseudoBulk)),
 
 enigma <- SingleCellExperiment(assays=list(logcounts = egm$X_k_norm[,,1]))
 enigma$Group <- idCell$Fibroblast				 
-enigma <- enigma[Frac$theta[,1]>0.05]
 enigma <- runPCA(enigma)
 enigma <- runUMAP(enigma,dimred="PCA",n_dimred=10)
 
 enigma_trace <- SingleCellExperiment(assays=list(logcounts = egm_trace$X_k_norm[,,1]))
 enigma_trace$Group <- idCell$Fibroblast				 
-enigma_trace <- enigma_trace[Frac$theta[,1]>0.05]
 enigma_trace <- runPCA(enigma_trace)
 enigma_trace <- runUMAP(enigma_trace,dimred="PCA",n_dimred=10)
 
@@ -233,7 +230,6 @@ enigma_trace <- runUMAP(enigma_trace,dimred="PCA",n_dimred=10)
 bmind_res = bMIND2(sqrt(PseudoBulk),ncore = 3, frac = Frac$theta, profile = sqrt(ref), noRE = FALSE)
 bmind <- SingleCellExperiment(assays=list(logcounts = (bmind_res$A[,1,])))
 bmind$Group <- idCell$Fibroblast		 
-bmind <- bmind[Frac$theta[,1]>0.05]
 bmind <- runPCA(bmind)
 bmind <- runUMAP(bmind,dimred="PCA",n_dimred=10)
 
@@ -241,7 +237,6 @@ bmind <- runUMAP(bmind,dimred="PCA",n_dimred=10)
 ##Using raw expression profile to compare
 bulk_plot <- SingleCellExperiment(assays=list(logcounts = PseudoBulk))
 bulk_plot$Group <- idCell$Fibroblast				 
-bulk_plot <- bulk_plot[Frac$theta[,1]>0.05]
 bulk_plot <- runPCA(bulk_plot)
 bulk_plot <- runUMAP(bulk_plot,dimred="PCA",n_dimred=10)
 
@@ -249,7 +244,6 @@ bulk_plot <- runUMAP(bulk_plot,dimred="PCA",n_dimred=10)
 ##plot the ground truth
 groundtruth <- SingleCellExperiment(assays=list(logcounts = H1_array[1,,]))
 groundtruth$Group <- idCell$Fibroblast				 
-#groundtruth <- groundtruth[Frac$theta[,1]>0.05]
 groundtruth <- runPCA(groundtruth)
 groundtruth <- runUMAP(groundtruth,dimred="PCA",n_dimred=10)
 
@@ -377,7 +371,6 @@ Exp4 <- PseudoBulk %*% diag(Frac$theta[,1]/sf)
 
 model1 <- SingleCellExperiment(assays=list(logcounts = Exp1))
 model1$Group <- idCell$Fibroblast				 
-model1 <- model1[Frac$theta[,1]>0.05]
 model1 <- runPCA(model1)
 model1 <- runUMAP(model1,dimred="PCA",n_dimred=10)
 ARI_model1 <- NULL
@@ -390,7 +383,6 @@ ARI_model1 <- c(ARI_model1,ARI)
 
 model2 <- SingleCellExperiment(assays=list(logcounts = Exp2))
 model2$Group <- idCell$Fibroblast				 
-model2 <- model2[Frac$theta[,1]>0.05]
 model2 <- runPCA(model2)
 model2 <- runUMAP(model2,dimred="PCA",n_dimred=10)
 ARI_model2 <- NULL
@@ -403,7 +395,6 @@ ARI_model2 <- c(ARI_model2,ARI)
 
 model3 <- SingleCellExperiment(assays=list(logcounts = Exp3))
 model3$Group <- idCell$Fibroblast				 
-model3 <- model3[Frac$theta[,1]>0.05]
 model3 <- runPCA(model3)
 model3 <- runUMAP(model3,dimred="PCA",n_dimred=10)
 ARI_model3 <- NULL
@@ -416,7 +407,6 @@ ARI_model3 <- c(ARI_model3,ARI)
 
 model4 <- SingleCellExperiment(assays=list(logcounts = Exp4))
 model4$Group <- idCell$Fibroblast				 
-model4 <- model4[Frac$theta[,1]>0.05]
 model4 <- runPCA(model4)
 model4 <- runUMAP(model4,dimred="PCA",n_dimred=10)
 ARI_model4 <- NULL
