@@ -24,4 +24,5 @@ Both scripts could be downloaded through following links:
 
 * [Identify four latent cell senescence states in Fibroblast](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/latentCellState.R)
 
+* [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ESCO_path.R)
 ## Code for supplementary note
