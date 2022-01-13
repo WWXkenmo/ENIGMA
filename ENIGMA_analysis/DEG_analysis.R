@@ -298,12 +298,11 @@ DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
 ###############################################
 #####
 #Visualize precision, sensitivity and Sensitivity
-source("/mnt/data1/weixu/HiDe/revised/DEG_analysis_uile_function.R")
+source("/Path/to/Data/DEG_analysis_uile_function.R")
 ES <- c(1.8,2.4,3,3.6,4.2,4.8)
 for(es in 1:length(ES)){
 ##The simulated datasets are provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/cts_DEG
-
-load(paste("/mnt/data1/weixu/HiDe/resCompare_bi_",ES[es],".Rdata",sep=""))
+load(paste("/Path/to/Data/resCompare_bi_",ES[es],".Rdata",sep=""))
 
 ##Rerunning TCA, bMIND and ENIGMA
 ##Runing TCA
