@@ -5,8 +5,8 @@ library(Seurat)
 library(SingleCellExperiment)
 library(scater)
 
-source("/mnt/data1/weixu/HiDe/revised/ENIGMA.R")
-
+source("ENIGMA.R")
+# The scRNA-seq datasets could be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE119807
 PD50 <- read.table("GSM3384107_LowPD50Gy.dge.txt",header=TRUE,row.names=1)
 LowPDCtrl <- read.table("GSM3384106_LowPDCtrl.dge.txt",header=TRUE,row.names=1)
 HighPDCtrl <- read.table("GSM3384108_HighPDCtrl.dge.txt",header=TRUE,row.names=1)
