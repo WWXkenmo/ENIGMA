@@ -17,12 +17,13 @@ Both scripts could be downloaded through following links:
 
 ## Code for main text
 * [Using tumor scRNA-seq data to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Simulation%20(scRNA-seq).R)
-(Fig. 2a)
+
 * [Simulate cell type-specific gene expression profile to assess CTS-DEGs detection accuracy](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Simulation%20(DEG).R)
-   
+
   [Benchmark CTS-DEG detection performance](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/DEG_analysis.R)
 
 * [Identify four latent cell senescence states in Fibroblast](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/latentCellState.R)
 
 * [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ESCO_path.R)
+
 ## Code for supplementary note
