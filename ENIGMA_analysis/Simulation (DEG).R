@@ -57,3 +57,4 @@ y <- gl(2, p/2)
 ##return the bulk and reference profile
 
 save(G,H1,DEG_list,file=paste("/Data/to/Path/Simulation/SNR_",SNR,"_Data.rdata",sep=""))
+## our simulated datasets are provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/cts_DEG
