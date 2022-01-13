@@ -32,7 +32,7 @@ HNSCC.m <- HNSCC.m[,patient %in% p.id]
 celltype <- celltype[patient %in% p.id]
 patient <- patient[patient %in% p.id]
 
-###only preserve 6 cell types
+###only preserve 6 major cell types
 HNSCC.m <- HNSCC.m[,celltype %in% c("B cell","Cancer Cell","Endothelial","Fibroblast","Mast","T cell")]
 patient <- patient[celltype %in% c("B cell","Cancer Cell","Endothelial","Fibroblast","Mast","T cell")]
 celltype <- celltype[celltype %in% c("B cell","Cancer Cell","Endothelial","Fibroblast","Mast","T cell")]
@@ -89,7 +89,7 @@ res_alg_all_HNSCC <- cell_deconvolve(X=log2(bulkSet_HNSCC+1),
                     theta=fra_HNSCC$theta,
 					R=log2(profile_hnscc+1),
 					epsilon=0.001,
-					alpha=0.5,
+					alpha=0.8,
 					beta=0.1,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
 
 ###Running ENIGMA (trace norm)					
@@ -97,7 +97,7 @@ res_alg_all_HNSCC2 <- cell_deconvolve_trace(O = as.matrix(log2(bulkSet_HNSCC+1))
                                                   theta=fra_HNSCC$theta,
                                                   R=log2(profile_hnscc[rownames(bulkSet_HNSCC),]+1),
                                                   epsilon=0.001,
-                                                  alpha=0.5,beta=30,solver="admm",gamma=1,
+                                                  alpha=0.8,beta=1,solver="admm",gamma=1,
                                                   verbose=TRUE,max.iter = 500,Normalize=FALSE)
 
 ###Running TCA
@@ -230,12 +230,11 @@ p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
     mytheme + theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))+NoLegend()
 p
 dev.off()
-
-save(bulkSet_HNSCC,profile_hnscc,P_HNSCC,file="/Path/to/Data/HNSCC_simulate_benchmark.Rdata")
 ############################################################
 #Simulation code of melanoma
 ######################################################################
 ##Running the melanoma
+# The melanoma datasets could be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE72056
 melanoma <- read.table("/Path/to/Data/GSE72056_melanoma_single_cell_revised_v2.txt",sep="\t",header=TRUE)
 sample <- read.csv("/Path/to/Data/sample.csv",row.names=1,stringsAsFactors=FALSE)
 patients.id <- sample[,1]
@@ -306,7 +305,7 @@ melanoma_Fra <- matrix(0, nrow=length(table(patients.sub)),ncol=length(table(cel
 colnames(melanoma_Fra) <- names(table(celltype.sub))
 rownames(melanoma_Fra) <- names(table(patients.sub))
 for(i in names(table(patients.sub))){
-  sample <- names(patients.sub)[patients.sub == i] ##extract the samples belong to the specific patients
+  sample <- names(patients.sub)[patients.sub == i] ## extract the samples belong to the specific patients
   sample <- sample(sample,500,replace=TRUE) ## fix sample 500 cells so that all bulk sample have similar "sequencing depth"
   bulkSet_melanoma <- cbind(bulkSet_melanoma, rowSums(bulkSet[,sample]))
   melanoma_Fra[i,names(table(celltype.sub[patients.sub==i]))] <- (table(celltype.sub[patients.sub==i]))/sum(patients.sub==i)
@@ -485,8 +484,6 @@ p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
     geom_boxplot()+theme_minimal()+labs(y="Correlation per gene")
 p
 dev.off()
-save(dat_sample,dat_gene,file="/Path/to/Data/melanoma_simulate_benchmark.Rdata")
-########################################################################################################
 
 
 
