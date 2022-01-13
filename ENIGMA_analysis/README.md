@@ -10,8 +10,8 @@ source("ENIGMA.R")
 source("DEG_analysis_uile_function.R")
 ```
 Both scripts could be downloaded through following links:
-[ENIGMA.R] (https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA.R)
-[DEG_analysis_uile_function] (https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/DEG_analysis_uile_function.R)
+[ENIGMA.R](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA.R)
+[DEG_analysis_uile_function](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/DEG_analysis_uile_function.R)
 
 ## Code for main text
 * [Using tumor scRNA-seq data to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Simulation%20(scRNA-seq).R)
