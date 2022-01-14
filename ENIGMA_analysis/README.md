@@ -27,3 +27,6 @@ Both scripts could be downloaded through following links:
 * [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ESCO_path.R)
 
 ## Code for supplementary note
+* [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Simulation(mutilPaltforms).R)
+
+* [Attaching noise to reference profile to explain the role of parameter alpha through CTS-DE analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ADMM_noise.R)
