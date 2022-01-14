@@ -119,7 +119,7 @@ admm_res=data.frame(alpha=alpha.v,ref_beta1=at,ref_beta1_noise0.1=at0.1,ref_beta
 saveRDS(admm_res,"/mnt/data2/zhouxl/ENIGMA/github/admm_noise/Data/admm_noise_res.rds")
 
 
-admm_res=readRDS("/Path/to/Data/admm_noise_res.rds")
+admm_res=readRDS("/Path/to/Data/admm_noise/admm_noise_res.rds")
 colnames(admm_res)=c("alpha","without noise","noise_level:0.1","noise_level:0.5","noise_level:1",
                      "noise_level:1.5","noise_level:2","noise_level:2.5","noise_level:3")
 admm_data=melt(admm_res,id="alpha")
