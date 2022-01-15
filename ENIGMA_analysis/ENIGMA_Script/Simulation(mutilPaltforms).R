@@ -12,9 +12,15 @@ library(ggsci)
 library(ggplot2)
 library(gridExtra)
 
-############## Using PBMC to reconsititute profile
-#The PBMC single cell RNA-seq data could downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE158055
+################################################
+### 1.prepare data
+################################################
+#Please note that the original data involved in this part takes up a lot of memory and is not uploaded to GitHub, 
+#but all the processing results required for subsequent analysis are uploaded. 
+#If you need the original data, you can contact us by email.
 
+############## 1.1 simulate bulk and ground true data
+#The PBMC single cell RNA-seq data could downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE158055
 # Because the original data is too large for direct analysis in R, we use separate processing and finally merge.
 
 ##step1: Use Python to convert files GSE158055_covid19_counts.mtx.gz,GSE158055_covid19_features.tsv.gz,GSE158055_covid19_barcodes.tsv.gz
@@ -47,18 +53,7 @@ library(gridExtra)
 # Seurat.obj@meta.data <- cbind(Seurat.obj@meta.data, metadata)
 # save(Seurat.obj,file="./pbmc_seurat10_1.rds")
 
-## There are 172 PBMC samples in this data, including 83 fresh PBMC samples. 
-## The 10x 3'-end sequencing samples are removed, leaving 82 10x 5'-end sequencing samples, 
-## 69 samples for simulating bulk and groundtrue data, and 13 samples for simulating reference data on the same platform
-
-
-################################################
-### 1.prepare data
-################################################
-#Please note that the original data involved in this part takes up a lot of memory and is not uploaded to GitHub, 
-#but all the processing results required for subsequent analysis are uploaded. 
-#If you need the original data, you can contact us by email.
-###########################1.1 simulate bulk and ground true data
+##step3: Merge all subsets
 #first subset
 pbmc=readRDS("./data/pbmc_seurat10_1.rds")
 pbmc=NormalizeData(pbmc,normalization.method = "RC")#cpm
@@ -121,11 +116,11 @@ for(x in samplesid){
 
 ## third subset
 pbmc=readRDS("./data/pbmc_seurat10_3.rds")
-## repeat the code from line91 to line 118...
+## repeat the code from line89 to line 115...
 
 ## fouth subset
 pbmc=readRDS("./data/pbmc_seurat10_4.rds")
-## repeat the code from line91 to line 118...
+## repeat the code from line89 to line 115...
 
 bulk=do.call(cbind,bulk_r)#genes x 70sampels
 #remove the fresh pbmc sample which is sequencing based 3'-end 10X 
@@ -135,9 +130,13 @@ groundTrue_r=groundTrue_r[which(names(groundTrue_r)!="S-S001-2")]
 freshpbmc69samples=list(bulk=bulk,groundTrue=groundTrue_r)
 saveRDS(freshpbmc69samples,"./freshpbmc69samples_sample500s_fivecellty.rds")
 
+## There are 172 PBMC samples in this data, including 83 fresh PBMC samples. 
+## The 10x 3'-end sequencing samples are removed, leaving 82 10x 5'-end sequencing samples, 
+## 69 samples for simulating bulk and groundtrue data, and 13 samples for simulating reference data on the same platform(1.2.6 ref six: same 10x 5'-end).
 
 ###########################1.2 simulate reference data
 #######1.2.1 ref one:seqwell platform
+##Data could be downloaded from https://hosted-matrices-prod.s3-us-west-2.amazonaws.com/Single_cell_atlas_of_peripheral_immune_response_to_SARS_CoV_2_infection-25/blish_covid.seu.rds
 seqwell=readRDS("./seq_well.obj.rds")
 seqwell=NormalizeData(seqwell,normalization.method = "RC")
 cellid=seqwell@meta.data[seqwell@meta.data$cell.type.coarse %in% c("B","CD4 T","CD8 T","CD14 Monocyte","CD16 Monocyte","NK"),] %>% rownames()
@@ -151,6 +150,7 @@ ref_seqwell_rmbe=remove_batch_effect(ExpressionSet(bulk_var),seqwell_sub_eset,"c
 saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe_500s.rds")
 
 #######
+##Data could be downloaded from https://singlecell.broadinstitute.org/single_cell/study/SCP424/single-cell-comparison-pbmc-data?cluster=Harmony%20TSNE&spatialGroups=--&annotation=Experiment--group--study&subsample=all#study-download
 sixplat=readRDS("./pbmc_ref.rds")
 #rename cell type
 sixplat@meta.data$CellType_group=str_replace_all(sixplat@meta.data$CellType_group,c("B cell"="B","CD14+ monocyte"="Mono","CD16+ monocyte"="Mono","CD4+ T cell"="T_CD4",
@@ -206,6 +206,7 @@ ref_Smart_rmbe=remove_batch_effect(ExpressionSet(bulk_var),Smart,"CellType_group
 saveRDS(ref_Smart_rmbe,"ref_smart_rmbe_500s.rds")
 
 #######1.2.6 ref six: same 10x 5'-end
+##
 pbmc13=readRDS("./pbmc_seurat_13_ref.rds")
 pbmc13@meta.data$cell=rownames(pbmc13@meta.data)
 pbmc13=NormalizeData(pbmc13,normalization.method = "RC")
@@ -265,6 +266,9 @@ for (j in colnames(groundTrue_r[[1]])) {
 }
 saveRDS(single_celltype,"./single_celltype_500s_fivecellty.rds")
 
+##Please note
+#The above code is the reference of the data preparation part (the user needs to download the original data by himself). 
+#The user can directly reproduce the results in our manuscript, according to the following code.
 
 #################################################################
 ##########      2. L2-norm 
