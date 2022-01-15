@@ -33,3 +33,5 @@ Both scripts could be downloaded through following links:
 * [Attaching noise to reference profile to explain the role of parameter alpha through CTS-DE analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ADMM_noise.R)
 
 * [Remove the spurious correlations betweeen inferred CSE profiles and cell type fractions](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Normalize_celltype_fractions.R)
+
+* [Post-hoc nonnegative constraint](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/NegativeValueEffects.R)
