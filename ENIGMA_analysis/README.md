@@ -37,3 +37,5 @@ Both scripts could be downloaded through following links:
 * [Post-hoc nonnegative constraint](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/NegativeValueEffects.R)
 
 * [Gradient Renormalization improve the performance of maximum L2 norm model](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Renomarlization_solver_compare_new.R)
+
+* [weixu wang](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Renomarlization_solver_compare_new.R)
