@@ -116,7 +116,6 @@ for(alpha in alpha.v){
 }
 admm_res=data.frame(alpha=alpha.v,ref_beta1=at,ref_beta1_noise0.1=at0.1,ref_beta1_noise0.5=at0.5,ref_beta1_noise1=at1,
                     ref_beta1_noise1.5=at1.5,ref_beta1_noise2=at2,ref_beta1_noise2.5=at2.5,ref_beta1_noise3=at3)
-saveRDS(admm_res,"/mnt/data2/zhouxl/ENIGMA/github/admm_noise/Data/admm_noise_res.rds")
 
 ##The result data is provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/admm_noise/
 admm_res=readRDS("/Path/to/Data/admm_noise/admm_noise_res.rds")
