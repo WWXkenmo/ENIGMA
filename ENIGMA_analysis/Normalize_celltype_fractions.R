@@ -339,7 +339,7 @@ for(alpha in c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)){
 ENIGMA_trace <- cell_deconvolve_trace(O = as.matrix(Bulk),
                                               theta=Frac$theta,
                                               R=Reference,
-                                              alpha=alpha,beta=1,solver="adaptive_admm",
+                                              alpha=alpha,beta=1,solver="admm",
                                               verbose=FALSE,max.iter = 1000,pos=FALSE,Norm.method = "frac",pre.process="none")
 										
 cor_per_ct <- NULL
