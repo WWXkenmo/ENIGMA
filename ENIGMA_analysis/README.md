@@ -31,3 +31,5 @@ Both scripts could be downloaded through following links:
 * [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Simulation(mutilPaltforms).R)
 
 * [Attaching noise to reference profile to explain the role of parameter alpha through CTS-DE analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ADMM_noise.R)
+
+* [Remove the spurious correlations betweeen inferred CSE profiles and cell type fractions](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Normalize_celltype_fractions.R)
