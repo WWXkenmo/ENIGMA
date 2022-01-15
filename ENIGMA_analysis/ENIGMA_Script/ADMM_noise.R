@@ -7,7 +7,7 @@ library(MASS)
 p = 100
 y <- gl(2, p/2)
 
-## our simulated datasets are provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/cts_DEG
+##Data is provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/cts_DEG
 load("/path/to/Data/resCompare_bi_4.8.Rdata")
 G <- testMatrixG[[1]]
 H1 <- testMatrixH1[[1]]
@@ -118,7 +118,7 @@ admm_res=data.frame(alpha=alpha.v,ref_beta1=at,ref_beta1_noise0.1=at0.1,ref_beta
                     ref_beta1_noise1.5=at1.5,ref_beta1_noise2=at2,ref_beta1_noise2.5=at2.5,ref_beta1_noise3=at3)
 saveRDS(admm_res,"/mnt/data2/zhouxl/ENIGMA/github/admm_noise/Data/admm_noise_res.rds")
 
-
+##The result data is provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/admm_noise/
 admm_res=readRDS("/Path/to/Data/admm_noise/admm_noise_res.rds")
 colnames(admm_res)=c("alpha","without noise","noise_level:0.1","noise_level:0.5","noise_level:1",
                      "noise_level:1.5","noise_level:2","noise_level:2.5","noise_level:3")
