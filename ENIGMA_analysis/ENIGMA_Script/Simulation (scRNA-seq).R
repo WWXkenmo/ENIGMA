@@ -366,7 +366,7 @@ res_alg_all_melanoma <- cell_deconvolve(X=bulk,
 res_alg_all_melanoma2 <- cell_deconvolve_trace(O = as.matrix(bulk),
                                                   theta=fra_melanoma$theta,
                                                   R=profileMat,
-                                                  epsilon=0.0001,
+                                                  epsilon=0.001,
                                                   alpha=0.8,beta=1,method="admm",gamma=1,
                                                   verbose=TRUE,max.iter = 100)
 dimnames(deconv_melanoma$A)[[2]] <- colnames(profileMat)
