@@ -360,14 +360,14 @@ res_alg_all_melanoma <- cell_deconvolve(X=bulk,
                     theta=fra_melanoma$theta,
 					R=profileMat,
 					epsilon=0.001,
-					alpha=0.5,
+					alpha=0.8,
 					beta=0.1,tao_k=0.5,verbose=TRUE,Normalize=FALSE)
 					
 res_alg_all_melanoma2 <- cell_deconvolve_trace(O = as.matrix(bulk),
                                                   theta=fra_melanoma$theta,
                                                   R=profileMat,
                                                   epsilon=0.0001,
-                                                  alpha=0.5,beta=30,method="admm",gamma=1,
+                                                  alpha=0.8,beta=1,method="admm",gamma=1,
                                                   verbose=TRUE,max.iter = 100)
 dimnames(deconv_melanoma$A)[[2]] <- colnames(profileMat)
 HiDe <- NULL
