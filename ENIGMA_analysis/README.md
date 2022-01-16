@@ -37,4 +37,4 @@ Both scripts could be downloaded through following links:
 * [Post-hoc nonnegative constraint](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NegativeValueEffects.R)
 
 * [Gradient Renormalization improve the performance of maximum L2 norm model](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Renomarlization_solver_compare_new.R)
-
+  Note: we also write a [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Why-fixed-renormalized-gradient-norm-size-%3D-200.pdf) to introduce why we use 200 as the new gradient norm size of renormalized gradient.
