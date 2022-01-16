@@ -399,3 +399,96 @@ p<-ggplot(df, aes(x=celltype, y=entries, fill=ind)) +
 png("negEffects(boxplot,l2max,raw).png",res=300,height=2000,width=2000)
 p
 dev.off()
+
+
+#########################################################
+##Benchmark CTS-DEG detection
+load("DEG_test_data_4.8")
+source("DEG_analysis_uile_function.R")
+
+#####refixed the negative values of inputted simulated gene expression matrix into positive
+value = max(abs(Bulk[Bulk<0]))
+Bulk = Bulk + value
+Reference = Reference + value
+Frac <- get_proportion(Bulk, Reference)
+y <- gl(2, 100/2)
+
+ENIGMA_trace <- cell_deconvolve_trace(O = as.matrix(Bulk),
+                                              theta=Frac$theta,
+                                              R=Reference,
+                                              alpha=0.1,beta=1,solver="admm",gamma = 0.1,
+                                              verbose=FALSE,max.iter = 1000,pos=FALSE,Norm.method = "frac",pre.process="none")
+result <- DEG_test(ENIGMA_trace$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_admm_neg <- DePRCcalculator(Tab,ENIGMA_trace$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+
+ENIGMA_trace$X_k_norm[ENIGMA_trace$X_k_norm<0] <- 0
+result <- DEG_test(ENIGMA_trace$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_admm_pos <- DePRCcalculator(Tab,ENIGMA_trace$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+
+
+######################################################################
+ENIGMA_trace <- cell_deconvolve_trace(O = as.matrix(Bulk),
+                                              theta=Frac$theta,
+                                              R=Reference,
+                                              alpha=0.1,beta=1,solver="proximalpoint",tao_k = 4,
+                                              verbose=FALSE,max.iter = 1000,pos=FALSE,Norm.method = "frac",pre.process="none")
+result <- DEG_test(ENIGMA_trace$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_pps_neg <- DePRCcalculator(Tab,ENIGMA_trace$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+
+ENIGMA_trace$X_k_norm[ENIGMA_trace$X_k_norm<0] <- 0
+result <- DEG_test(ENIGMA_trace$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_pps_pos <- DePRCcalculator(Tab,ENIGMA_trace$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+
+ENIGMA_l2max <- cell_deconvolve(X=as.matrix(Bulk),
+                                        theta=Frac$theta,
+                                        R=Reference,
+                                        epsilon=0.001,
+                                        alpha=0.1,
+                                        beta=0.5,tao_k=0.01,max.iter=1000,verbose=FALSE,pos=FALSE,Norm.method = "frac")
+										
+result <- DEG_test(ENIGMA_l2max$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_l2norm_neg <- DePRCcalculator(Tab,ENIGMA_l2max$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+ENIGMA_l2max$X_k_norm[ENIGMA_l2max$X_k_norm<0] <- 0
+result <- DEG_test(ENIGMA_l2max$X_k_norm,y)
+###Evaluation
+Tab <- result$pval
+perform_frac_l2norm_pos <- DePRCcalculator(Tab,ENIGMA_l2max$X_k_norm,DEG_list,y,10000)$AUC_PR
+
+#####################################
+
+df <- data.frame(AUPRC = c(perform_frac_admm_pos,perform_frac_admm_neg,perform_frac_pps_pos,perform_frac_pps_neg,perform_frac_l2norm_pos,perform_frac_l2norm_neg),Method = rep(c(rep("Raw",5),rep("Post-hoc",5)),3),CellType = rep(rep(paste0("CellType-",1:5,sep=""),2),3),Model = c(rep("Trace(ADMM)",10),rep("Trace(ProximalPoint)",10),rep("L2 norm",10)))
+p<-ggplot(df, aes(x=CellType, y=AUPRC, fill=Method)) +
+    geom_bar(stat="identity",position=position_dodge())+theme_classic2()+theme(text = element_text(size=20))+labs(x="") +  facet_wrap(~Model, nrow=1)
+png("BarplotAUPRC.png",res=300,height=1600,width=4500)
+p
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
