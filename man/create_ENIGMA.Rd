@@ -7,7 +7,7 @@
 create_ENIGMA(
   bulk,
   ref,
-  ref_type = c("single_cell", "bulk"),
+  ref_type = c("single_cell", "sort", "aggre"),
   meta_bulk = NULL,
   meta_ref = NULL,
   assay = NULL
@@ -18,7 +18,7 @@ create_ENIGMA(
 
 \item{ref}{raw reference data, could be single cell (matrix, SingleCellExperiment object or Seurat object) or FACS bulk}
 
-\item{ref_type}{Determine the reference type. Should be either "single_cell" or "bulk".}
+\item{ref_type}{Determine the reference type. Should be either "single_cell" or "sort".}
 
 \item{meta_bulk}{metadata of bulk matrix}
 

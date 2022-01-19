@@ -24,18 +24,26 @@ setClassUnion(name = 'AnyFactor', members = c("factor", "list"))
 #' @slot result_CSE
 #' inferred cell type-specific expression (CSE)
 #'
+#'
+#' @slot result_CSE_normalized
+#' inferred (normalized) cell type-specific expression (CSE)
+#'
 #' @exportClass ENIGMA
 #' @importFrom methods setClass
 #'
 ENIGMA = methods::setClass(
     "ENIGMA",
     slots = c(
+	    model = "list",
+		model_name = "data.frame",
+		loss_his = "AnyMatrix",
         raw_input = "list",
         ref_type = "character",
         bulk = "AnyMatrix",
         ref = "AnyMatrix",
         result_cell_proportion = "AnyMatrix",
-        result_CSE = "SingleCellExperiment"
+        result_CSE = "SingleCellExperiment",
+		result_CSE_normalized = "SingleCellExperiment"
     )
 )
 
@@ -55,7 +63,7 @@ setMethod(f = "show", signature = "ENIGMA", definition = function(object) {
 #' raw reference data, could be single cell (matrix, SingleCellExperiment object or Seurat object) or FACS bulk
 #'
 #' @param ref_type
-#' Determine the reference type. Should be either "single_cell" or "bulk".
+#' Determine the reference type. Should be either "single_cell" or "sort".
 #'
 #' @param meta_bulk
 #' metadata of bulk matrix
@@ -69,14 +77,22 @@ setMethod(f = "show", signature = "ENIGMA", definition = function(object) {
 #' @importFrom SummarizedExperiment SummarizedExperiment
 #' @export
 #'
-create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "bulk"), meta_bulk=NULL, meta_ref=NULL, assay=NULL) {
+create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "sort", "aggre"), meta_bulk=NULL, meta_ref=NULL, assay=NULL) {
+    suppressPackageStartupMessages(require("SingleCellExperiment"))
+	
     if ( !inherits(bulk, what = c("matrix", "Matrix", "dgCMatrix")) ) {
         stop("Bulk should be a matrix. ")
     }
-    if ( !(ref_type %in% c("single_cell", "bulk")) | (length(ref_type) != 1) ) {
-        stop("Invalid reference type. Please input 'single_cell' or 'bulk'. ")
+    if ( !(ref_type %in% c("single_cell", "sort","aggre")) | (length(ref_type) != 1) ) {
+        stop("Invalid reference type. Please input 'single_cell','aggre' or 'sort'. ")
     }
-
+	
+	if(ref_type %in% c("aggre") & ncol(ref)>=ncol(Bulk)){
+		stop("Invalid reference! more number of cell type than bulk samples! check if the ref_type == 'single_cell'? ")
+	}
+    if (ref_type == "single_cell" & is.null(meta_ref)) {
+        stop("Single cell reference has no metadata to determine cell type. ")
+    }
     ## reference is single cell RNA-seq
     if (ref_type == "single_cell") {
         message(date(), " Reference from Single Cell RNA-seq. ")
@@ -84,7 +100,9 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "bulk"), meta_bul
         if ( inherits(ref, what = c("matrix", "Matrix", "dgCMatrix")) ) {
             message(date(), " Obtain reference from a matrix")
             ref_matrix = ref
-            if (!is.null(meta_ref)) meta_ref = DataFrame(meta_ref)
+            if (!is.null(meta_ref)){meta_ref = DataFrame(meta_ref)}else{
+		    stop("Single cell reference has no metadata to determine cell type.")
+		}
         }
 
         ## input is SingleCellExperiment object
@@ -127,18 +145,39 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "bulk"), meta_bul
             }
         }
     }
-
+	
     ## reference is FACS Bulk RNA-seq/microarray
-    if (ref_type == "bulk") {
-        message(date(), " Reference from FACS Bulk RNA-seq/microarray. ")
-        ref_matrix = ref
-    }
-
+	if (ref_type == "aggre") {
+	    message(date(), " Reference from aggregated FACS/Sort Bulk RNA-seq/microarray/scRNA-seq. ")
+		ref_matrix = ref
+		meta_ref = data.frame(cell_type = colnames(ref))
+		meta_ref = DataFrame(meta_ref)
+	}
+	
+	if(ref_type == "sort"){
+	message(date(), " Reference from FACS/Sort Bulk RNA-seq/microarray/scRNA-seq dataset. ")
+	if(ref_type == "sort" & !is.null(meta_ref)){
+	if (ref_type == "sort" & ncol(meta_ref)==1) {
+		meta_ref = as.matrix(meta_ref)
+		ref_m = NULL
+		for(i in names(table(meta_ref[,1]))){
+		  ref_m = cbind(ref_m, rowMeans(as.matrix(ref[,meta_ref[,1]==i])))
+		}
+		colnames(ref_m) <- names(table(meta_ref[,1]))
+		id = colnames(meta_ref)
+		meta_ref = data.frame(as.matrix(names(table(meta_ref[,1]))))
+		colnames(meta_ref) = id
+		meta_ref = DataFrame(meta_ref)
+		ref_matrix = ref_m
+    }else{
+	    stop("Required only one cell type annotation! ")
+	}
+	}else{
+	    stop("Required cell type annotation!")
+	}
+	}
+	
     ## packaging bulk into SE object
-    if (max(bulk) < 50) {
-        warning("Bulk matrix seems to be in log space. Anti-log all values by 2^x. ")
-        bulk = 2^bulk
-    }
     bulk_se = SummarizedExperiment(
         assays = list( raw=bulk )
     )
@@ -148,19 +187,14 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "bulk"), meta_bul
     }
 
     ## packaging reference into SE object
-    if (max(ref_matrix) < 50) {
-        warning("Reference matrix seems to be in log space. Anti-log all values by 2^x. ")
-        ref_matrix = 2^ref_matrix
+    if (max(ref_matrix) < 30) {
+        warning("Reference matrix seems to be in log space. Please check if the reference matrix is normalized count data. ")
     }
-    ref_se = SummarizedExperiment(
+	ref_se = SummarizedExperiment(
         assays = list( raw=ref_matrix )
     )
-    if (!is.null(meta_ref) & is(meta_ref, "DataFrame")) {
-        colData(ref_se) = meta_ref
-    }
-    if (ref_type == "single_cell" & ncol(meta_ref)==0) {
-        warning("Single cell reference has no metadata to determine cell type. ")
-    }
+	colData(ref_se) = meta_ref
+	
 
     ## packaging raw input
     input_list = list(
@@ -174,5 +208,10 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "bulk"), meta_bul
         raw_input=input_list,
         ref_type=ref_type
     )
+	
+	## return bulk and object
+	object@bulk = assay( object@raw_input$bulk, "raw" )
+	object@ref = assay( object@raw_input$ref, "raw" )
+	if(ref_type == "sort"){colnames(object@ref) = object@raw_input$ref$celltype}
     return(object)
 }

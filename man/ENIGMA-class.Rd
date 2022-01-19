@@ -22,5 +22,7 @@ The ENIGMA Class
 \item{\code{result_cell_proportion}}{the proportion of each cell types in bulk samples}
 
 \item{\code{result_CSE}}{inferred cell type-specific expression (CSE)}
+
+\item{\code{result_CSE_normalized}}{inferred (normalized) cell type-specific expression (CSE)}
 }}
 

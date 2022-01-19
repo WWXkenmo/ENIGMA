@@ -4,11 +4,21 @@
 \alias{get_cell_proportion}
 \title{Calculate the proportion of each cell types in bulk samples}
 \usage{
-get_cell_proportion(object)
+get_cell_proportion(object, max.iter = 500)
 }
 \arguments{
 \item{object}{ENIGMA object}
+
+\item{max.iter}{the maximum iteration times for robust linear model. Default = 500}
+}
+\value{
+the ENIGMA object contains the cell type fractions in object@result_cell_proportion
 }
 \description{
 Calculate the proportion of each cell types in bulk samples
+}
+\examples{
+\dontrun{
+get_cell_proportion(egm)
+}
 }

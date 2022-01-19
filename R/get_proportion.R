@@ -1,17 +1,28 @@
 #' @title Calculate the proportion of each cell types in bulk samples
 #'
 #' @param object ENIGMA object
+#' 
+#' @param max.iter
+#' the maximum iteration times for robust linear model. Default = 500
+#'
+#' @return the ENIGMA object contains the cell type fractions in object@result_cell_proportion
+#'
+#' 
+#' @examples
+#' \dontrun{
+#' get_cell_proportion(egm)
+#' }
 #' @export
 #'
-get_cell_proportion <- function(object) {
+get_cell_proportion <- function(object,max.iter = 500) {
     cat( date(), "Calculating cell type proportion of bulk samples... \n" )
-    object@result_cell_proportion = get_proportion(X = object@bulk, ref = object@ref)$theta
+    object@result_cell_proportion = get_proportion(X = object@bulk, ref = object@ref, max.iter = max.iter)$theta
     return(object)
 }
 
 #' @importFrom MASS rlm
 #'
-get_proportion <- function(X, ref) {
+get_proportion <- function(X, ref,max.iter = 500) {
     gene_id = intersect( rownames(X), rownames(ref) )
     X_m = X[gene_id,]
     ref_m = ref[gene_id,]
@@ -24,7 +35,7 @@ get_proportion <- function(X, ref) {
         colnames(Exp) <- colnames(X_m)[i]
         Exp <- scale(Exp)
 
-        rlm.o <- rlm(Exp ~ as.matrix(ref_m), maxit = 100)
+        rlm.o <- rlm(Exp ~ as.matrix(ref_m), maxit = max.iter)
         coef.v <- summary(rlm.o)$coef[2:(ncol(as.matrix(ref_m)) + 1), 1]
         coefVec <- rbind(coefVec,coef.v)
         coef.v[which(coef.v < 0)] <- 0

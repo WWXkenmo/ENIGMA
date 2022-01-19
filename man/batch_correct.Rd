@@ -4,7 +4,13 @@
 \alias{batch_correct}
 \title{Remove batch effect with bulk and reference}
 \usage{
-batch_correct(object, varname_cell_type, n_pseudo_bulk = 100)
+batch_correct(
+  object,
+  varname_cell_type,
+  n_pseudo_bulk = 100,
+  sample_size = 1000,
+  ncores = 6
+)
 }
 \arguments{
 \item{object}{ENIGMA object}
@@ -12,6 +18,8 @@ batch_correct(object, varname_cell_type, n_pseudo_bulk = 100)
 \item{varname_cell_type}{Varname in colData of reference to tell which column is cell type. Only avaliable when reference is single cell RNA-seq data.}
 
 \item{n_pseudo_bulk}{Number of pseudo bulk samples generated from scRNA reference. Only avaliable when reference is single cell RNA-seq data. Default is 100.}
+
+\item{sample_size}{Number of sampled cell for reconstituting pseudo-bulk samples. Default is 1000.}
 }
 \description{
 Remove batch effect with bulk and reference

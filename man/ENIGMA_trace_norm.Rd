@@ -6,12 +6,23 @@
 \usage{
 ENIGMA_trace_norm(
   object,
+  theta,
+  R,
   alpha = 0.5,
-  beta = 100,
-  gamma = 1,
-  epsilon = 1e-04,
-  max.iter = 100,
-  verbose = TRUE
+  beta = 1,
+  tao_k = 1,
+  gamma = NULL,
+  epsilon = NULL,
+  max.iter = 1000,
+  solver = "admm",
+  verbose = FALSE,
+  pos = TRUE,
+  Normalize = TRUE,
+  Norm.method = "PC",
+  preprocess = "log",
+  loss_his = TRUE,
+  model_tracker = FALSE,
+  model_name = NULL
 )
 }
 \arguments{
@@ -30,7 +41,9 @@ if this parameter gets larger, than the latent dimension of each CSE is smaller
 (lower trace norm value), which means that each sample is more similar with
 each others. The user need to tune this parameter based on the range of
 the singular value of the bulk RNA-seq matrix.
-Default: 100}
+Default: 1}
+
+\item{tao_k}{step size for proximal point method. Default: 1}
 
 \item{gamma}{This parameter is used to control the distance between CSE (X) and auxiliary variable (Y). Default: 1}
 
@@ -39,10 +52,35 @@ a extremly small value, the number of iteration would influence
 the latent dimensions of CSE, as each step is performing singular value thresholding.
 Default: 0.0001}
 
-\item{max.iter}{The maximum number of iterations. Default: 100}
+\item{max.iter}{The maximum number of iterations. Default: 1000}
+
+\item{solver}{The solver for solving trace norm model. method used: admm, admm_fast or proximal point method}
 
 \item{verbose}{Whether return the information after each step of processing. Default: TRUE}
+
+\item{Normalize}{Whether perform normalization on resulted expression profile. Default: TRUE}
+
+\item{Norm.method}{Method used to perform normalization. User could choose PC, frac or quantile.}
+
+\item{preprocess}{Method used to perform variance stablization preprocessing. User could choose sqrt, log or none.sqrt: square root transformation; log: log2(*+1) transformation; none: no data transformation.}
+
+\item{loss_his}{save the loss value of each round of iteration.}
+
+\item{model_tracker}{save the model in returned object}
+
+\item{model_name}{name of the model}
+}
+\value{
+ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 }
 \description{
 ENIGMA trace norm version
+}
+\examples{
+\dontrun{
+egm = ENIGMA_trace_norm(egm,model_tracker = TRUE, Norm.method="quantile")
+egm@result_CSE
+egm@result_CSE_normalized
+}
+
 }

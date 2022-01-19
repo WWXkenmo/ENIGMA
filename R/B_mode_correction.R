@@ -2,8 +2,8 @@
 #' @importFrom SummarizedExperiment assay
 #' @importFrom sva ComBat
 remove_batch_effect_B_mode <- function(object){
-    X = assay( object@raw_input$bulk, "raw" )
-    ref = assay( object@raw_input$ref, "raw" )
+    X = object@bulk
+    ref = object@ref
 
     frac <- get_proportion(X,ref)
     fra = frac$theta
@@ -22,9 +22,9 @@ remove_batch_effect_B_mode <- function(object){
         X_mix_log2[rowSums(X_mix_log2)>0,],
         batch=c( rep("1",ncol(X)), rep("2",nrow(fra)) )
     )
-    X_correct <- 2^correct[,1:ncol(X)]
+    X_correct <- 2^correct[,1:ncol(X)] - 1
 
-    correct <- 2^correct[,(ncol(X)+1):ncol(correct)]
+    correct <- 2^correct[,(ncol(X)+1):ncol(correct)] - 1 
 
     cat(date(), "Done. ")
     object@ref = ref

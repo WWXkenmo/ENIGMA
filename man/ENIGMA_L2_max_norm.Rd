@@ -2,18 +2,23 @@
 % Please edit documentation in R/ENIGMA_L2_norm.R
 \name{ENIGMA_L2_max_norm}
 \alias{ENIGMA_L2_max_norm}
-\title{ENIGMA L2 max norm version}
+\title{ENIGMA maximum L2 norm version}
 \usage{
 ENIGMA_L2_max_norm(
   object,
   alpha = 0.5,
   tao_k = 0.01,
-  beta = 8000,
+  beta = 0.1,
   epsilon = 0.001,
   max.iter = 1000,
   verbose = TRUE,
-  infer = FALSE,
-  pos = TRUE
+  pos = TRUE,
+  Normalize = TRUE,
+  Norm.method = "frac",
+  preprocess = "sqrt",
+  loss_his = TRUE,
+  model_tracker = FALSE,
+  model_name = NULL
 )
 }
 \arguments{
@@ -23,18 +28,40 @@ ENIGMA_L2_max_norm(
 
 \item{tao_k}{The step size of each round of gradient decent. Default: 0.01}
 
-\item{beta}{The regularization parameter to penalize the weight (deconvoluted expression) matrices from being too large. Default: 8000}
+\item{beta}{The regularization parameter to penalize the weight (deconvoluted expression) matrices from being too large. Default: 0.1}
 
 \item{epsilon}{Determine the stop condition in CSE updating. Default: 0.001}
 
 \item{max.iter}{The maximum number of iterations. Default: 1000}
 
-\item{verbose}{Whether return the information after each step of processing. Default: TRUE}
+\item{verbose}{Rreturn the information after each step of processing. Default: TRUE}
 
-\item{infer}{Whether return the re-estimated cell type fractions. Default: FALSE}
+\item{pos}{Set all entries in CSE is positive. Default: TRUE}
 
-\item{pos}{Whether set all entries in CSE is positive. Default: TRUE}
+\item{Normalize}{perform normalization on resulted expression profile. Default: TRUE}
+
+\item{Norm.method}{Method used to perform normalization. User could choose PC, frac or quantile}
+
+\item{preprocess}{Method used to perform variance stablization preprocessing. User could choose none, sqrt or log}
+
+\item{loss_his}{save the loss value of each round of iteration.}
+
+\item{model_tracker}{save the model in returned object}
+
+\item{model_name}{name of the model}
+}
+\value{
+ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 }
 \description{
-ENIGMA L2 max norm version
+maximum L2 norm version is the default version of ENIGMA, which is the regularized weighted matrix completion to constraint the maximum L2 norm of inferred cell type-specific gene expression matrix.
+}
+\examples{
+\dontrun{
+egm = ENIGMA_l2max_norm(egm,model_tracker = TRUE, Norm.method="quantile")
+egm@result_CSE
+egm@result_CSE_normalized
+}
+
+
 }
