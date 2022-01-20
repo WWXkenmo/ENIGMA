@@ -90,9 +90,6 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "sort", "aggre"),
 	if(ref_type %in% c("aggre") & ncol(ref)>=ncol(Bulk)){
 		stop("Invalid reference! more number of cell type than bulk samples! check if the ref_type == 'single_cell'? ")
 	}
-    if (ref_type == "single_cell" & is.null(meta_ref)) {
-        stop("Single cell reference has no metadata to determine cell type. ")
-    }
     ## reference is single cell RNA-seq
     if (ref_type == "single_cell") {
         message(date(), " Reference from Single Cell RNA-seq. ")
