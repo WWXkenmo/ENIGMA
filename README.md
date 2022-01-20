@@ -1,5 +1,5 @@
 ## News
-###release v1.3
+### release v1.3
 1. add plotLossCurve to visualize the training
 2. set model_tracker parameter to track the trained model
 3. add new solvers to trace norm model
