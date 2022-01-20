@@ -42,6 +42,9 @@
 #' @param model_name
 #' name of the model
 #'
+#' @param random
+#' random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE
+#'
 #' @return ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 #'
 #'
@@ -54,7 +57,7 @@
 #'
 #'
 #' @export
-ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, verbose=TRUE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL){
+ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, verbose=TRUE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,random = FALSE){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -97,7 +100,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
                                    colnames(theta))
     )
     for(i in 1:ncol(theta)){
-        P_old[,,i] <- X
+       if(!random){P_old[,,i] <- X}else{nse = rnorm((dim(X)[1]*dim(X)[2])); nse[nse<0] <- 0; P_old[,,i] <- X + matrix(nse,nrow(X),ncol(X))}
     }
     ###update iteractively
     P_old_new <- P_old

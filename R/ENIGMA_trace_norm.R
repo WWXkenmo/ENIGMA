@@ -59,6 +59,10 @@
 #' @param model_name
 #' name of the model
 #'
+#'
+#' @param random
+#' random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE
+#'
 #' @return ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 #'
 #'
@@ -71,7 +75,7 @@
 #'
 #' @export
 #'
-ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "PC",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL){
+ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "PC",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,random=FALSE){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -106,7 +110,7 @@ ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=N
                                colnames(theta))
     )
     for(i in 1:ncol(theta)){
-        X[,,i] <- O
+        if(!random){X[,,i] <- O}else{nse = rnorm((dim(O)[1]*dim(O)[2])); nse[nse<0] <- 0; X[,,i] <- O + matrix(nse,nrow(O),ncol(O))}
     }
 
     ###

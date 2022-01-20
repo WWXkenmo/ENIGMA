@@ -22,7 +22,8 @@ ENIGMA_trace_norm(
   preprocess = "log",
   loss_his = TRUE,
   model_tracker = FALSE,
-  model_name = NULL
+  model_name = NULL,
+  random = FALSE
 )
 }
 \arguments{
@@ -69,6 +70,8 @@ Default: 0.0001}
 \item{model_tracker}{save the model in returned object}
 
 \item{model_name}{name of the model}
+
+\item{random}{random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE}
 }
 \value{
 ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
