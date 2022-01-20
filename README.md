@@ -1,4 +1,15 @@
 ## News
+release v1.3
+1. add plotLossCurve to visualize the training
+2. set model_tracker parameter to track the trained model
+3. add new solvers to trace norm model
+4. improve the ENIGMA_class function
+The previous versions of ENIGMA are delated, user could downloaded the latest version through
+```
+devtools::install_github("WWXKenmo/ENIGMA")
+```
+
+
 ### release v1.1
 1. Fixed the bugs in batch_correct
 2. Add new functions to re-normalized inferred CSE
