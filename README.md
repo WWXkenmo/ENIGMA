@@ -47,14 +47,13 @@ co-expression network to identify modules that relevant to phenotypes of interes
 ## Usage
 For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
 
-* [A simple guide of ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf)
 * [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
 * [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
 ## Install
 ```
 devtools::install_github("WWXKenmo/ENIGMA")
 ```
-Please refer to the [document](https://enigma-docs.readthedocs.io/en/latest/) of ENIGMA for detailed guidence using ENIGMA as a R package. 
+Please refer to the [https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf](https://enigma-docs.readthedocs.io/en/latest/) of ENIGMA for detailed guidence using ENIGMA as a R package. 
 
 ## Required Packages
 sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
