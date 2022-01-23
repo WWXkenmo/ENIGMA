@@ -53,7 +53,7 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 ```
 devtools::install_github("WWXKenmo/ENIGMA")
 ```
-Please refer to the [https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf](https://enigma-docs.readthedocs.io/en/latest/) of ENIGMA for detailed guidence using ENIGMA as a R package. 
+Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package. 
 
 ## Required Packages
 sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
