@@ -1,0 +1,581 @@
+---
+title: "Beta cell type-specific network in pancreas islet tissues"
+author: "Weixu Wang"
+date: "2022/1/25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+##load packages
+suppressPackageStartupMessages(library(Biobase))
+suppressPackageStartupMessages(library(SingleCellExperiment))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(cowplot))
+suppressPackageStartupMessages(library(WGCNA))
+suppressPackageStartupMessages(library(scater))
+suppressPackageStartupMessages(library(GSVA))
+suppressPackageStartupMessages(library(pheatmap))
+suppressPackageStartupMessages(library(clusterProfiler))
+suppressPackageStartupMessages(library(org.Hs.eg.db))
+suppressPackageStartupMessages(library(nnls))
+source("/mnt/data1/weixu/HiDe/revised/ENIGMA.R")
+baron <- readRDS("/mnt/data1/weixu/HiDe/pancreas/baron_processed.rds")
+SASP <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/SASP.rds")
+CellAge <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/CellAge.rds")
+pancreas_bulk <- read.table("/mnt/data1/weixu/HiDe/pancreas/pancreas/bulk/Fadista/GSE50244_Genes_counts_TMM_NormLength_atLeastMAF5_expressed.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE,row.names=1)
+pancreas_bulk_set <- ExpressionSet(as.matrix(pancreas_bulk))
+baron$cell_type1 <- as.character(as.matrix(baron$cell_type1))
+##The batch-correct profile matrix would be stochastic because of random sampling, one could use our saved files to reproduce the results in paper.
+tmp_pancreas <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/tmp_pancreas.rds")
+Fra_pancreas <- get_proportion(tmp_pancreas$bulk,tmp_pancreas$cell_type1)
+egm_model1 <- cell_deconvolve(X=as.matrix(log2((tmp_pancreas$bulk)+1)),
+                                     theta=Fra_pancreas$theta,
+                                     R=as.matrix(log2(tmp_pancreas$cell_type1+1)),
+                                     epsilon = 0.001,
+                                     alpha=0.5,    beta=0.1,tao_k=0.01,max.iter=1000,verbose=FALSE,Normalize=FALSE,pre.process="log")
+metadata <- read.csv("/mnt/data1/weixu/HiDe/pancreas/metadata_pancreas.csv",stringsAsFactors = FALSE,row.names=1)
+rownames(metadata) <- paste0("X",rownames(metadata),sep="")
+sample <- intersect(rownames(metadata),rownames(Fra_pancreas$theta))
+
+###clinically define the T2D patients as HbA1c > 6.5
+label <- rep(0, nrow(metadata));label[metadata$HbA1c >= 6.5] <- 1
+pt_ct <- c("Acinar cell","Alpha cell","Beta cell","Delta cell","Ductal cell")
+```
+
+## Tuning the parameter through evaluating concordance with external scRNA-seq datasets
+
+In order to more accurately identify the beta cell type-specific network, we need to tune our model parameter. To realize this goal, we integrated previous published single cell datasets sequenced both normal and T2D patients, and tune the parameter so that our inferred beta cell expression variantion among normal and T2D patients would have high concordance with the real single cell datasets.
+We used following concordance function to perform evaluation
+```{r}
+evaluate_concordance_pancreas <- function(predict,table,n_boot=1000,sig_threshold=1){
+    ind1 = which(is.nan(predict[,2])==FALSE)
+	ind2 = which(is.nan(table[,2])==FALSE)
+	ind = intersect(ind1,ind2)
+	predict = predict[ind,]
+	table = table[ind,]
+    seq <- runif(n_boot)
+    ES <- abs((predict[predict[,2]<sig_threshold,1]))
+    seq <- quantile(ES,seq)
+    prob <- NULL
+    for(i in 1:length(seq)){   
+        predict_filter <- predict[predict[,2]<sig_threshold&abs((predict[,1]))>seq[i],]
+        predict_filter <- predict_filter[order(predict_filter[,1],decreasing=FALSE),]
+        
+        table_sub <- table[rownames(predict_filter),]
+        prob <- c(prob,sum(diag(table(sign((predict_filter[,1])),sign((table_sub[,1])))))/sum(table(sign((predict_filter[,1])),sign((table_sub[,1])))))
+    }
+    
+    prob
+}
+
+evaluate_concordance_pancreas_top500 <- function(predict,table,n_boot=1000,sig_threshold=1){
+    ind1 = which(is.nan(predict[,2])==FALSE)
+	ind2 = which(is.nan(table[,2])==FALSE)
+	ind = intersect(ind1,ind2)
+	predict = predict[ind,]
+	table = table[ind,]
+    seq <- runif(n_boot)
+	predict[,2][order(predict[,2],decreasing=FALSE)[501]] -> sig_threshold
+    ES <- abs((predict[predict[,2]<sig_threshold,1]))
+    seq <- quantile(ES,seq)
+    prob <- NULL
+    for(i in 1:length(seq)){   
+        predict_filter <- predict[predict[,2]<sig_threshold&abs((predict[,1]))>seq[i],]
+        predict_filter <- predict_filter[order(predict_filter[,1],decreasing=FALSE),]
+        
+        table_sub <- table[rownames(predict_filter),]
+        prob <- c(prob,sum(diag(table(sign((predict_filter[,1])),sign((table_sub[,1])))))/sum(table(sign((predict_filter[,1])),sign((table_sub[,1])))))
+    }
+    
+    prob
+}
+```
+
+First, we tune our model according to our parameter analyses (see Supplementary Note). As our reference is from total different batch and sequencing platform compare with bulk RNA-seq datasets, the idea parameter of alpha would be 0.9, and we also increase the parameter beta, so that the model could converge fastly.
+
+```{r}
+egm_model2 <- cell_deconvolve(X=as.matrix(log2((tmp_pancreas$bulk)+1)),
+                                     theta=Fra_pancreas$theta,
+                                     R=as.matrix(log2(tmp_pancreas$cell_type1+1)),
+                                     epsilon = 0.001,
+                                     alpha=0.9,
+                                     beta=0.5,tao_k=0.01,max.iter=1000,verbose=FALSE,Normalize=FALSE,pre.process="log")	
+```
+
+We calculated the DEGs for both of ENIGMA models through OLS model (egm_model1(raw model), egm_model2(new model))
+```{r}
+Exp <- egm_model1$X_k[,sample,"beta"]
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+if(var(Exp[j,])>0){
+pvalue <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,4]
+FC <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}else{
+line <- c(NA,NA)
+DEG <- rbind(DEG,line)
+}
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_hba1c_model1 <- DEG
+
+
+Exp <- egm_model2$X_k[,sample,"beta"]
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+if(var(Exp[j,])>0){
+pvalue <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,4]
+FC <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}else{
+line <- c(NA,NA)
+DEG <- rbind(DEG,line)
+}
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_hba1c_model2 <- DEG
+```
+
+We also perform DEG analysis for bulk RNA-seq, and regard its values one of the baseline
+```{r}
+Exp <- log2(tmp_pancreas$bulk+1)[,sample]
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+if(var(Exp[j,])>0){
+pvalue <- summary(lm((Exp[j,])~metadata[sample,]$HbA1c))$coefficients[2,4]
+FC <- summary(lm((Exp[j,])~metadata[sample,]$HbA1c))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}else{
+line <- c(NA,NA)
+DEG <- rbind(DEG,line)
+}
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_hba1c_bulk <- DEG
+```
+
+We also run the bMIND and TCA models, and regard them as the baseline models
+```{r}
+###Using bMIND to benchmark
+sig <- as.matrix(log2(tmp_pancreas$cell_type1+1))
+colnames(sig) <- paste0("cellType",1:5)
+colnames(Fra_pancreas$theta) <- colnames(sig)
+G <- log2(tmp_pancreas$bulk+1)
+#pancreas_deconv = MIND::bMIND2(G, frac = Fra_pancreas$theta, profile=sig,  ncore = 5, noRE = F) ### this step would be costed for a long time, to reproduce our results, user could using following code
+pancreas_deconv = readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/deconv_pancreas.rds")
+
+Exp <- pancreas_deconv$A[,3,sample]
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+if(var(Exp[j,])>0){
+pvalue <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,4]
+FC <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}else{
+line <- c(NA,NA)
+DEG <- rbind(DEG,line)
+}
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_hba1c_bmind <- DEG
+
+
+
+####################################################
+###Running the TCA algorithm
+library(TCA)
+bulk_tca <-  log2(as.matrix(tmp_pancreas$bulk)[,sample]+1)
+bulk_tca <- bulk_tca[apply(bulk_tca,1,var)>10^-6,]
+#tca.mdl <- tca(X = bulk_tca, W = Fra_pancreas$theta[sample,], C1 = NULL, C2 = NULL,
+#                parallel = TRUE,num_cores=3,max_iters=50);
+#Z_hat <- tensor(X = bulk_tca, tca.mdl) ### this step would be costed for a long time, to reproduce our results, user could using following code
+Z_hat = readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/pancreas_tca.rds")
+
+Exp <- Z_hat[[3]][,sample]
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+if(var(Exp[j,])>0){
+pvalue <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,4]
+FC <- summary(lm((Exp[j,][Fra_pancreas$theta[sample,3]!=0])~metadata[sample,][Fra_pancreas$theta[sample,3]!=0,]$HbA1c))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}else{
+line <- c(NA,NA)
+DEG <- rbind(DEG,line)
+}
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_hba1c_tca <- DEG
+```
+
+Generate the ground truth through external single cell datasets, the data could be downloaded from https://hemberg-lab.github.io/scRNA.seq.datasets/human/pancreas/
+```{r}
+Xin <- readRDS("/mnt/data1/weixu/HiDe/pancreas/xin.rds")
+Xin_normal <- Xin[,Xin$condition %in% "Healthy"]
+Xin_normal_count <- log2(normcounts(Xin_normal)+1)
+Xin_normal$cell_type1 <- as.character(as.matrix(Xin_normal$cell_type1))
+frac <- table(Xin_normal$cell_type1)/length(Xin_normal$cell_type1)
+Xin_normal_count <- Xin_normal_count[,Xin_normal$cell_type1 %in% names(frac)]
+celltype_normal <- Xin_normal$cell_type1
+celltype_normal <- celltype_normal[celltype_normal %in% names(frac)]
+rm(Xin_normal);gc()
+
+Xin_t2d <- Xin[,Xin$condition %in% "T2D"]
+Xin_t2d_count <- log2(normcounts(Xin_t2d)+1)
+Xin_t2d$cell_type1 <- as.character(as.matrix(Xin_t2d$cell_type1))
+frac <- table(Xin_t2d$cell_type1)/length(Xin_t2d$cell_type1)
+Xin_t2d_count <- Xin_t2d_count[,Xin_t2d$cell_type1 %in% names(frac)]
+celltype_t2d <- Xin_t2d$cell_type1
+celltype_t2d <- celltype_t2d[celltype_t2d %in% names(frac)]
+rm(Xin_t2d);gc()
+rm(Xin);gc()
+
+
+Exp <- cbind(Xin_normal_count[,celltype_normal %in% "beta"], Xin_t2d_count[,celltype_t2d %in% "beta"])
+label_sc <- c(rep(0,sum(celltype_normal %in% "beta")),rep(1, sum(celltype_t2d %in% "beta")))
+DEG <- NULL
+for(j in 1:nrow(Exp)){
+#pvalue <- summary(lm(Exp[j,]~label_sc))$coefficients[2,4]
+pvalue <- wilcox.test(Exp[j,label_sc==1],Exp[j,label_sc==0])$p.value
+FC <- summary(lm(Exp[j,]~label_sc))$coefficients[2,1]
+line <- c(FC,pvalue)
+DEG <- rbind(DEG,line)
+}
+DEG <- as.data.frame(DEG)
+colnames(DEG) <- c("FC","pvalue")
+rownames(DEG) <- rownames(Exp)
+DEG$p.adj <- p.adjust(DEG$pvalue,method="BH")
+DEG_list_pancreas_sc_true <- DEG
+```
+
+perform benchmark through evaluating the concordance on all genes
+```{r}
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_bulk),rownames(DEG_list_pancreas_sc_true))
+prob_bulk <- evaluate_concordance_pancreas(DEG_list_pancreas_hba1c_bulk[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_tca),rownames(DEG_list_pancreas_sc_true))
+prob_tca <- evaluate_concordance_pancreas(DEG_list_pancreas_hba1c_tca[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_bmind),rownames(DEG_list_pancreas_sc_true))
+prob_bmind <- evaluate_concordance_pancreas(DEG_list_pancreas_hba1c_bmind[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_model1),rownames(DEG_list_pancreas_sc_true))
+prob_l2max_model1 <- evaluate_concordance_pancreas(DEG_list_pancreas_hba1c_model1[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_model2),rownames(DEG_list_pancreas_sc_true))
+prob_l2max_model2 <- evaluate_concordance_pancreas(DEG_list_pancreas_hba1c_model2[gene,],DEG_list_pancreas_sc_true[gene,])
+beta_cell_performance <- c(prob_bulk,prob_tca,prob_bmind,prob_l2max_model1,prob_l2max_model2)
+model <- c(rep("Bulk",length(prob_bulk)),rep("TCA",length(prob_tca)),rep("bMIND",length(prob_bmind)),rep("ENIGMA(model1)",length(prob_l2max_model1)),rep("ENIGMA(model2)",length(prob_l2max_model2)))
+concordance_res = data.frame(concordance = beta_cell_performance,model = model, cell_type = rep("Beta cell",length(model)))
+colnames(concordance_res) = c("concordance","method","CellType")
+
+concordance_res$method <- as.factor(concordance_res$method)
+concordance_res$method <- factor(concordance_res$method,levels = c("Bulk","bMIND","TCA","ENIGMA(model1)","ENIGMA(model2)"))
+concordance_res <- concordance_res[is.nan(concordance_res$concordance)==FALSE,]		 
+p1 <- ggplot(concordance_res, aes(x=method, y=concordance,fill = method)) +
+  geom_boxplot()+labs(y="Concordance")+
+  theme_classic() +
+  theme(strip.background = element_blank(),strip.text.x = element_blank(),text = element_text(size=20))  
+p1
+```
+
+perform benchmark through evaluating the concordance on top500 most significant DEGs for each methods
+```{r}
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_bulk),rownames(DEG_list_pancreas_sc_true))
+prob_bulk <- evaluate_concordance_pancreas_top500(DEG_list_pancreas_hba1c_bulk[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_tca),rownames(DEG_list_pancreas_sc_true))
+prob_tca <- evaluate_concordance_pancreas_top500(DEG_list_pancreas_hba1c_tca[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_bmind),rownames(DEG_list_pancreas_sc_true))
+prob_bmind <- evaluate_concordance_pancreas_top500(DEG_list_pancreas_hba1c_bmind[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_model1),rownames(DEG_list_pancreas_sc_true))
+prob_l2max_model1 <- evaluate_concordance_pancreas_top500(DEG_list_pancreas_hba1c_model1[gene,],DEG_list_pancreas_sc_true[gene,])
+gene <- intersect(rownames(DEG_list_pancreas_hba1c_model2),rownames(DEG_list_pancreas_sc_true))
+prob_l2max_model2 <- evaluate_concordance_pancreas_top500(DEG_list_pancreas_hba1c_model2[gene,],DEG_list_pancreas_sc_true[gene,])
+beta_cell_performance <- c(prob_bulk,prob_tca,prob_bmind,prob_l2max_model1,prob_l2max_model2)
+model <- c(rep("Bulk",length(prob_bulk)),rep("TCA",length(prob_tca)),rep("bMIND",length(prob_bmind)),rep("ENIGMA(model1)",length(prob_l2max_model1)),rep("ENIGMA(model2)",length(prob_l2max_model2)))
+concordance_res = data.frame(concordance = beta_cell_performance,model = model, cell_type = rep("Beta cell",length(model)))
+colnames(concordance_res) = c("concordance","method","CellType")
+
+concordance_res$method <- as.factor(concordance_res$method)
+concordance_res$method <- factor(concordance_res$method,levels = c("Bulk","bMIND","TCA","ENIGMA(model1)","ENIGMA(model2)"))
+concordance_res <- concordance_res[is.nan(concordance_res$concordance)==FALSE,]		 
+p1 <- ggplot(concordance_res, aes(x=method, y=concordance,fill = method)) +
+  geom_boxplot()+labs(y="Concordance")+
+  theme_classic() +
+  theme(strip.background = element_blank(),strip.text.x = element_blank(),text = element_text(size=20))  
+p1
+```
+
+Through the boxplot, we could conclude that the performance of ENIGMA(model2) could better identify the T2D-associate gene expression variation in beta cell, therefore, we used ENIGMA(model2) to construct the beta cell specific network
+
+## Construct Beta cell type-specific gene co-expression network
+repeat the same analysis to construct the network in beta cell
+```{r}
+betaCell <- egm_model2$X_k[,,3]
+featureGene <- apply(betaCell,1,var)
+betaCell <- betaCell[order(featureGene,decreasing=TRUE)[1:8000],]
+
+##Construct WGCNA network and compare with bulk-expression based network
+powers = c(c(1:10), seq(from = 12, to=30, by=2))
+sft = pickSoftThreshold(t(betaCell), powerVector = powers, verbose = 5,networkType="signed")
+
+softPower = 24;
+adjacency = adjacency(t(betaCell), power = softPower,type="signed");
+TOM = TOMsimilarity(adjacency);
+dissTOM = 1-TOM
+
+geneTree = hclust(as.dist(dissTOM), method = "average");
+# Plot the resulting clustering tree (dendrogram)
+sizeGrWindow(12,9)
+plot(geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity",
+labels = FALSE, hang = 0.04);
+minModuleSize = 30;
+# Module identification using dynamic tree cut:
+dynamicMods = cutreeDynamic(dendro = geneTree, distM = dissTOM,
+deepSplit = 2, pamRespectsDendro = FALSE,
+minClusterSize = minModuleSize);
+
+dynamicColors = labels2colors(dynamicMods)
+table(dynamicColors)
+# Plot the dendrogram and colors underneath
+sizeGrWindow(8,6)
+plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut",
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05,
+main = "Gene dendrogram and module colors")
+
+MEList = moduleEigengenes(t(betaCell), colors = dynamicColors)
+MEs = MEList$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss = 1-cor(MEs);
+# Cluster module eigengenes
+METree = hclust(as.dist(MEDiss), method = "average");
+
+MEDissThres = 0.25
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "red")
+# Call an automatic merging function
+merge = mergeCloseModules(t(betaCell), dynamicColors, cutHeight = MEDissThres, verbose = 3)
+# The merged module colors
+mergedColors = merge$colors;
+# Eigengenes of the new merged modules:
+mergedMEs = merge$newMEs;
+
+sizeGrWindow(12, 9)
+#pdf(file = "Plots/geneDendro-3.pdf", wi = 9, he = 6)
+plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors),
+c("Dynamic Tree Cut", "Merged dynamic"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+```
+
+Repeat the analysis in bulk RNA-seq
+```{r}
+bulk <- log2(tmp_pancreas$bulk[rownames(betaCell),]+1)
+
+powers = c(c(1:10), seq(from = 12, to=30, by=2))
+sft = pickSoftThreshold(t(bulk), powerVector = powers, verbose = 5,networkType="signed")
+
+softPower = 14;
+adjacency_bulk = adjacency(t(bulk), power = softPower,type="signed");
+TOM_bulk = TOMsimilarity(adjacency_bulk);
+dissTOM_bulk = 1-TOM_bulk
+
+geneTree_bulk = hclust(as.dist(dissTOM_bulk), method = "average");
+# Plot the resulting clustering tree (dendrogram)
+sizeGrWindow(12,9)
+plot(geneTree_bulk, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity",
+labels = FALSE, hang = 0.04);
+minModuleSize = 30;
+# Module identification using dynamic tree cut:
+dynamicMods_bulk = cutreeDynamic(dendro = geneTree_bulk, distM = dissTOM_bulk,
+deepSplit = 2, pamRespectsDendro = FALSE,
+minClusterSize = minModuleSize);
+
+dynamicColors_bulk = labels2colors(dynamicMods_bulk)
+table(dynamicColors_bulk)
+# Plot the dendrogram and colors underneath
+sizeGrWindow(8,6)
+plotDendroAndColors(geneTree_bulk, cbind(dynamicColors_bulk),
+c("Acinar Expression Module"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+
+
+MEList_bulk = moduleEigengenes(t(bulk), colors = dynamicColors_bulk)
+MEs_bulk = MEList_bulk$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss_bulk = 1-cor(MEs_bulk);
+# Cluster module eigengenes
+METree_bulk = hclust(as.dist(MEDiss_bulk), method = "average");
+
+MEDissThres_bulk = 0.25
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres_bulk, col = "red")
+# Call an automatic merging function
+merge_bulk = mergeCloseModules(t(bulk), dynamicColors_bulk, cutHeight = MEDissThres_bulk, verbose = 3)
+# The merged module colors
+mergedColors_bulk = merge_bulk$colors;
+# Eigengenes of the new merged modules:
+mergedMEs_bulk = merge_bulk$newMEs;
+```
+
+Joint plot the beta cell co-expression module and bulk gene co-expression modules
+```{r}
+sizeGrWindow(12, 9)
+#pdf(file = "Plots/geneDendro-3.pdf", wi = 9, he = 6)
+plotDendroAndColors(geneTree, cbind(mergedColors,mergedColors_bulk),
+c("Dynamic Tree Cut", "Merged dynamic"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+```
+
+## Identify phenotype (BMI and HbA1c) related modules
+```{r}
+MEs = orderMEs(mergedMEs)
+moduleTraitCor = cor(MEs[sample,], metadata, use = "p");
+moduleTraitPvalue = corPvalueStudent(moduleTraitCor, length(sample));
+select.row <- apply(moduleTraitPvalue,1,function(x) sum(x<0.05)>0)
+moduleTraitCor <- moduleTraitCor[select.row,]
+moduleTraitPvalue <- moduleTraitPvalue[select.row,]
+
+textMatrix = paste(signif(moduleTraitCor, 2), "\n(",
+signif(moduleTraitPvalue, 1), ")", sep = "");
+dim(textMatrix) = dim(moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3));
+# Display the correlation values within a heatmap plot
+labeledHeatmap(Matrix = moduleTraitCor,
+xLabels = colnames(metadata),
+yLabels = names(MEs)[select.row],
+ySymbols = names(MEs)[select.row],
+colorLabels = FALSE,
+colors = greenWhiteRed(50),
+textMatrix = textMatrix,
+setStdMargins = FALSE,
+cex.text = 0.5,
+zlim = c(-1,1),
+main = paste("Module-trait relationships"))
+```
+
+perform the GO enrichment analysis to the interesting modules (darkgreen and blue)
+```{r}
+darkgreen_gene <- rownames(betaCell)[mergedColors=="darkgreen"]
+darkgreen_gene <- bitr(darkgreen_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_darkgreen <- enrichGO(darkgreen_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE)
+
+df_barMarker2 <- data.frame(pval = -log10(summary(goterm_darkgreen)[1:4,]$p.adjust),goterm=summary(goterm_darkgreen)[1:4,]$Description)
+df_barMarker2$goterm_name <- factor(c(summary(goterm_darkgreen)[1:4,]$Description),levels=c(c(summary(goterm_darkgreen)[1:4,]$Description)[order(-log10(summary(goterm_darkgreen)[1:4,]$p.adjust),decreasing=FALSE)]))
+p_darkgreen_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="dark green")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+p_darkgreen_go
+																							   
+
+blue_gene <- rownames(betaCell)[mergedColors=="blue"]
+blue_gene <- bitr(blue_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_blue <- enrichGO(blue_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE)
+
+df_barMarker2 <- data.frame(pval = -log10(summary(goterm_blue)[1:4,]$p.adjust),goterm=summary(goterm_blue)[1:4,]$Description)
+df_barMarker2$goterm_name <- factor(c(summary(goterm_blue)[1:4,]$Description),levels=c(c(summary(goterm_blue)[1:4,]$Description)[order(-log10(summary(goterm_blue)[1:4,]$p.adjust),decreasing=FALSE)]))
+p_blue_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="blue")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+p_blue_go
+```
+
+
+## Calculate enrichment of darkgreen module with cellular senescence genes
+```{r}
+library(VennDiagram)
+darkgreen_gene <- rownames(betaCell)[mergedColors=="darkgreen"]
+venn.plot <- venn.diagram(
+    list(darkgreen=darkgreen_gene,
+         CellAge=intersect(CellAge$gene_symbol,rownames(betaCell))),
+    "venn_plot.tiff"
+)
+CAG = rep(0,length(rownames(betaCell)));CAG[rownames(betaCell) %in% intersect(CellAge$gene_symbol,rownames(betaCell))] <- 1
+DKG = rep(0,length(rownames(betaCell)));DKG[rownames(betaCell) %in% darkgreen_gene] <- 1
+fisher.test(table(CAG,DKG),alternative="greater")
+```
+
+## Compare gene significance difference from beta to bulk
+```{r}
+GS1=as.numeric(cor(metadata$HbA1c,t(betaCell[,sample]), method="sp"))
+GeneSignificance=abs(GS1)
+GeneSignificance <- GeneSignificance[mergedColors %in% gsub("ME","",rownames(moduleTraitCor))]
+colorh1 <- mergedColors[mergedColors %in% gsub("ME","",rownames(moduleTraitCor))]
+plotModuleSignificance(GeneSignificance,colorh1)
+
+Connectivity_beta <- WGCNA::intramodularConnectivity(adjacency,mergedColors)
+Connectivity_beta$module <- mergedColors
+##Visualize darkgreen module network
+Connectivity_beta_darkgreen <- subset(Connectivity_beta, module %in% "darkgreen")
+##calculate module membership
+mm <- cor(t(betaCell[rownames(Connectivity_beta_darkgreen),]),MEs[,"MEdarkgreen"])
+Connectivity_beta_darkgreen$MM <- mm
+Connectivity_beta_darkgreen <- Connectivity_beta_darkgreen[order(Connectivity_beta_darkgreen$MM, decreasing=TRUE),]
+
+MEList_betaCell_beta = moduleEigengenes(t(betaCell), colors = mergedColors)$eigengenes
+cor_mm <- abs(cor(MEList_betaCell_beta[,"MEdarkgreen"],t(betaCell[rownames(Connectivity_beta_darkgreen),]),method="sp"))
+GS1=abs(as.numeric(cor(metadata$HbA1c,t(betaCell[rownames(Connectivity_beta_darkgreen),sample]), method="sp")))
+
+verboseScatterplot(cor_mm,
+GS1, col="darkgreen",
+main="Beta cell",
+xlab = "Connectivity", ylab = "Gene Significance", abline = TRUE)
+```
+
+## Show the senescence module is specific activate in beta cell
+```{r}
+pancreas <- cell_type_pancreas <- NULL
+for(i in 1:ncol(tmp_pancreas$cell_type1)){
+ pancreas <- cbind(pancreas,egm_model2$X_k[,Fra_pancreas$theta[,i]!= -1,i])
+ cell_type_pancreas <- c(cell_type_pancreas,rep(colnames(tmp_pancreas$cell_type1)[i],sum(Fra_pancreas$theta[,i]!= -1)))
+}
+darkgreen_gene <- rownames(betaCell)[mergedColors=="darkgreen"]
+colnames(pancreas) <- paste0("Sample-",1:ncol(pancreas))
+
+pancreas_ranking <- AUCell::AUCell_buildRankings(cbind(pancreas,log2(tmp_pancreas$bulk+1)))
+auc <- AUCell::AUCell_calcAUC(list(darkgreen = darkgreen_gene),pancreas_ranking)
+auc <- AUCell::getAUC(auc)
+
+bulk_darkgreen <- auc[1,colnames(tmp_pancreas$bulk)]
+beta_darkgreen <- auc[1,colnames(pancreas)[cell_type_pancreas %in% "beta"]]
+names(bulk_darkgreen) <- names(beta_darkgreen) <- colnames(tmp_pancreas$bulk)
+
+
+color <- label[Fra_pancreas$theta[sample,3]!=1]
+color[label[Fra_pancreas$theta[sample,3]!=1]==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label[Fra_pancreas$theta[sample,3]!=1]==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata$HbA1c[Fra_pancreas$theta[sample,3]!=1],ModuleActivity=beta_darkgreen[sample][Fra_pancreas$theta[sample,3]!=1],label=label[Fra_pancreas$theta[sample,3]!=1],color=color)
+scatter_dat$label <- as.factor(scatter_dat$label)
+
+p_ModuleActivity <- ggplot(scatter_dat, aes(x=HbA1c, y=ModuleActivity, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=15))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col="black")
+p_ModuleActivity
+cor.test(scatter_dat$HbA1c, scatter_dat$ModuleActivity,method="sp")	
+```
+
+plot the hub gene co-expression network for darkgreen modules
+```{r}
+color1=mergedColors;names(color1) <- rownames(betaCell)
+restGenes= rownames(Connectivity_beta_darkgreen)[1:10]
+diss1=1-TOMsimilarityFromExpr( t(betaCell)[, restGenes], power = 24 )
+
+M <- 1-diss1^24
+rownames(M) <- colnames(M) <- restGenes
+pheatmap(M[rownames(Connectivity_beta_darkgreen)[1:10],rownames(Connectivity_beta_darkgreen)[1:10]],cluster_cols=FALSE,cluster_rows=FALSE,border=FALSE)
+```

@@ -1,0 +1,575 @@
+---
+title: "The deconvolution analysis in pancreas islet tissues"
+author: "Weixu Wang"
+date: "2022/1/24"
+output: html_document
+---
+
+```{r}
+##load packages
+suppressPackageStartupMessages(library(Biobase))
+suppressPackageStartupMessages(library(SingleCellExperiment))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(cowplot))
+suppressPackageStartupMessages(library(WGCNA))
+suppressPackageStartupMessages(library(scater))
+suppressPackageStartupMessages(library(GSVA))
+suppressPackageStartupMessages(library(pheatmap))
+suppressPackageStartupMessages(library(clusterProfiler))
+suppressPackageStartupMessages(library(org.Hs.eg.db))
+suppressPackageStartupMessages(library(nnls))
+source("/mnt/data1/weixu/HiDe/revised/ENIGMA.R")
+```
+
+Loading the datasets we need, the datasets could be downloaded from Github https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis
+```{r}
+baron <- readRDS("/mnt/data1/weixu/HiDe/pancreas/baron_processed.rds")
+SASP <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/SASP.rds")
+CellAge <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/CellAge.rds")
+pancreas_bulk <- read.table("/mnt/data1/weixu/HiDe/pancreas/pancreas/bulk/Fadista/GSE50244_Genes_counts_TMM_NormLength_atLeastMAF5_expressed.txt",sep="\t",stringsAsFactors=FALSE,header=TRUE,row.names=1)
+```
+
+Our single cell datasets of normal pancreas islet tissue (reference) is downloaded from https://hemberg-lab.github.io/scRNA.seq.datasets/human/pancreas/. We generated the reference profile matrix through S-mode correction.
+```{r}
+pancreas_bulk_set <- ExpressionSet(as.matrix(pancreas_bulk))
+baron$cell_type1 <- as.character(as.matrix(baron$cell_type1))
+tmp_pancreas = remove_batch_effect(pancreas_bulk_set,baron,"cell_type1",n=1000)
+###The batch-correct profile matrix would be stochastic because of random sampling, one could use our saved files to reproduce the results in paper.
+tmp_pancreas <- readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/tmp_pancreas.rds")
+```
+
+Calculate the cell type fraction matrix
+```{r}
+Fra_pancreas <- get_proportion(tmp_pancreas$bulk,tmp_pancreas$cell_type1)
+```
+
+Running the ENIGMA with default parameter setting 
+```{r}
+egm_model1 <- cell_deconvolve(X=as.matrix(log2((tmp_pancreas$bulk)+1)),
+                                     theta=Fra_pancreas$theta,
+                                     R=as.matrix(log2(tmp_pancreas$cell_type1+1)),
+                                     epsilon = 0.001,
+                                     alpha=0.5,    beta=0.1,tao_k=0.01,max.iter=1000,verbose=FALSE,Normalize=FALSE,pre.process="log")	
+```
+
+```{r}
+# visualize the CSE profiles through t-SNE
+pancreas <- cell_type_pancreas <- NULL
+for(i in 1:ncol(tmp_pancreas$cell_type1)){
+ pancreas <- cbind(pancreas,egm_model1$X_k[,Fra_pancreas$theta[,i]!=0,i])
+ cell_type_pancreas <- c(cell_type_pancreas,rep(colnames(tmp_pancreas$cell_type1)[i],sum(Fra_pancreas$theta[,i]!=0)))
+}
+
+sce_pancreas <- SingleCellExperiment(assays = list(logcounts = pancreas))
+sce_pancreas$cell_type <- cell_type_pancreas
+sce_pancreas <- runPCA(sce_pancreas,scale=TRUE)
+pca <- reducedDims(sce_pancreas)
+plot(attributes(pca$PCA)$varExplained)
+sce_pancreas <- runTSNE(sce_pancreas)
+
+plotTSNE(sce_pancreas, colour_by="cell_type") +theme(text = element_text(size=15))
+```
+
+## Calculating the correlation between each cell senescence score and BMI, HbA1c
+
+load the metadata information of bulk, which contains the level of HbA1c
+```{r}
+metadata <- read.csv("/mnt/data1/weixu/HiDe/pancreas/metadata_pancreas.csv",stringsAsFactors = FALSE,row.names=1)
+rownames(metadata) <- paste0("X",rownames(metadata),sep="")
+sample <- intersect(rownames(metadata),rownames(Fra_pancreas$theta))
+
+###clinically define the T2D patients as HbA1c > 6.5
+label <- rep(0, nrow(metadata));label[metadata$HbA1c >= 6.5] <- 1
+pt_ct <- c("Acinar cell","Alpha cell","Beta cell","Delta cell","Ductal cell")
+```
+
+
+Using GSVA to evaluate each sample senescence score, and using the scatter plot to visualize the correlation between senescence of each cell type and BMI. 
+```{r}
+bmi_tab <- NULL
+for(ct in c(1:5)){
+PS_gene <- intersect(rownames(tmp_pancreas$cell_type1),c(SASP$Gene,CellAge$gene_symbol));PS_gene <- PS_gene[rowMeans(log2(as.matrix(pancreas_bulk)+1)[PS_gene,])>0.1]
+scrna <- egm_model1$X_k[,,ct]
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(BMI=metadata[sample,]$BMI,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat[Fra_pancreas$theta[sample,ct]!=0,]
+print(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"))
+print(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value)
+bmi_tab <- rbind(bmi_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_bmi_",ct," <- ggplot(scatter_dat_filter, aes(x=BMI, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_bmi_",ct," <-","p_bmi_",ct,"+labs(y='Senescence Score',title='",pt_ct[ct],": R = ",value1, "; P-value = ",value2, "')",sep="")))
+}
+
+scrna <- log2(as.matrix(pancreas_bulk)+1)
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(BMI=metadata[sample,]$BMI,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat
+bmi_tab <- rbind(bmi_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_bmi_bulk"," <- ggplot(scatter_dat_filter, aes(x=BMI, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_bmi_bulk","<- p_bmi_bulk","+labs(y='Senescence Score',title='Bulk: R = ",value1, "; P-value = ",value2, "')",sep="")))
+
+plot_grid(p_bmi_bulk,p_bmi_1,p_bmi_2,p_bmi_3,p_bmi_4,p_bmi_5,nrow=3,ncol=2)
+```
+
+Using GSVA to evaluate each sample senescence score, and using the scatter plot to visualize the correlation between senescence of each cell type and HbA1c. 
+```{r}
+hba1c_tab <- NULL
+for(ct in c(1:5)){
+PS_gene <- intersect(rownames(tmp_pancreas$cell_type1),c((SASP$Gene),(CellAge$gene_symbol)));PS_gene <- PS_gene[rowMeans(log2(as.matrix(pancreas_bulk)+1)[PS_gene,])>0.1]
+scrna <- egm_model1$X_k[,,ct]
+es.dif <- gsva(scrna, list(PS_gene),mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata[sample,]$HbA1c,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat[Fra_pancreas$theta[sample,ct]!=0,]
+print(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"))
+print(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value)
+hba1c_tab <- rbind(hba1c_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_hba1c_",ct," <- ggplot(scatter_dat_filter, aes(x=HbA1c, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_hba1c_",ct," <-","p_hba1c_",ct,"+labs(y='Senescence Score',title='",pt_ct[ct],": R = ",value1, "; P-value = ",value2, "')",sep="")))
+}
+
+scrna <- log2(as.matrix(pancreas_bulk)+1)
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata[sample,]$HbA1c,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat
+hba1c_tab <- rbind(hba1c_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_hba1c_bulk"," <- ggplot(scatter_dat_filter, aes(x=HbA1c, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_hba1c_bulk","<- p_hba1c_bulk","+labs(y='Senescence Score',title='Bulk: R = ",value1, "; P-value = ",value2, "')",sep="")))
+
+plot_grid(p_hba1c_bulk,p_hba1c_1,p_hba1c_2,p_hba1c_3,p_hba1c_4,p_hba1c_5,nrow=3,ncol=2)
+```
+
+
+To further support our discovery, we used the cellular senescence signature downloaded from different database and conducted the same analysis (http://csgene.bioinfo-minzhao.org/)
+```{r}
+##cellular senescence genes for human
+csgenes = read.table("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/csgene_human.txt",header=TRUE,sep="\t")
+
+############## Analyze BMI
+bmi_tab <- NULL
+for(ct in c(1:5)){
+PS_gene <- intersect(rownames(tmp_pancreas$cell_type1),c((SASP$Gene),csgenes$GeneSymb));PS_gene <- PS_gene[rowMeans(log2(as.matrix(pancreas_bulk)+1)[PS_gene,])>0.1]
+scrna <- egm_model1$X_k[,,ct]
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(BMI=metadata[sample,]$BMI,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat[Fra_pancreas$theta[sample,ct]!=0,]
+print(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"))
+print(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value)
+bmi_tab <- rbind(bmi_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_bmi_",ct," <- ggplot(scatter_dat_filter, aes(x=BMI, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_bmi_",ct," <-","p_bmi_",ct,"+labs(y='Senescence Score',title='",pt_ct[ct],": R = ",value1, "; P-value = ",value2, "')",sep="")))
+}
+
+scrna <- log2(as.matrix(pancreas_bulk)+1)
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(BMI=metadata[sample,]$BMI,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat
+bmi_tab <- rbind(bmi_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_bmi_bulk"," <- ggplot(scatter_dat_filter, aes(x=BMI, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_bmi_bulk","<- p_bmi_bulk","+labs(y='Senescence Score',title='Bulk: R = ",value1, "; P-value = ",value2, "')",sep="")))
+
+plot_grid(p_bmi_bulk,p_bmi_1,p_bmi_2,p_bmi_3,p_bmi_4,p_bmi_5,nrow=3,ncol=2)
+```
+
+
+Using GSVA to evaluate each sample senescence score, and using the scatter plot to visualize the correlation between senescence of each cell type and HbA1c. 
+```{r}
+hba1c_tab <- NULL
+for(ct in c(1:5)){
+PS_gene <- intersect(rownames(tmp_pancreas$cell_type1),c((SASP$Gene),(csgenes$GeneSymb)));PS_gene <- PS_gene[rowMeans(log2(as.matrix(pancreas_bulk)+1)[PS_gene,])>0.1]
+scrna <- egm_model1$X_k[,,ct]
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata[sample,]$HbA1c,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat[Fra_pancreas$theta[sample,ct]!=0,]
+print(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"))
+print(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value)
+hba1c_tab <- rbind(hba1c_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_hba1c_",ct," <- ggplot(scatter_dat_filter, aes(x=HbA1c, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_hba1c_",ct," <-","p_hba1c_",ct,"+labs(y='Senescence Score',title='",pt_ct[ct],": R = ",value1, "; P-value = ",value2, "')",sep="")))
+}
+
+scrna <- log2(as.matrix(pancreas_bulk)+1)
+es.dif <- gsva(scrna, list(PS_gene), mx.diff=TRUE, verbose=FALSE, parallel.sz=1)
+s = es.dif[1,]
+names(s) <- colnames(egm_model1$X_k)
+
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata[sample,]$HbA1c,Sene.Score=s[sample],label=label,color=color)
+scatter_dat$label[scatter_dat$label==1] <- "T2D"
+scatter_dat$label[scatter_dat$label==0] <- "Normal"
+scatter_dat$label <- as.factor(scatter_dat$label)
+scatter_dat_filter <- scatter_dat
+hba1c_tab <- rbind(hba1c_tab,c(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value))
+eval(parse(text = paste("p_hba1c_bulk"," <- ggplot(scatter_dat_filter, aes(x=HbA1c, y=Sene.Score, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=12))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col='black')",sep="")))
+value1 <- round(cor(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p"),3)
+value2 <- round(cor.test(scatter_dat_filter[,1],scatter_dat_filter[,2],method="p")$p.value,3)
+eval(parse(text = paste("p_hba1c_bulk","<- p_hba1c_bulk","+labs(y='Senescence Score',title='Bulk: R = ",value1, "; P-value = ",value2, "')",sep="")))
+
+plot_grid(p_hba1c_bulk,p_hba1c_1,p_hba1c_2,p_hba1c_3,p_hba1c_4,p_hba1c_5,nrow=3,ncol=2)
+```
+
+## Plot the correlation results between beta cell fractions and HbA1c.				
+
+```{r}
+color <- label
+color[label==1] <- rgb(254,118,109,maxColorValue = 255)
+color[label==0] <- rgb(118,167,0,maxColorValue = 255)
+scatter_dat <- data.frame(HbA1c=metadata[sample,]$HbA1c,Fraction=Fra_pancreas$theta[sample,3],label=label,color=color)
+scatter_dat$label <- as.factor(scatter_dat$label)
+
+##filter out low abundance cell type fractions
+scatter_dat = scatter_dat[scatter_dat$Fraction>0.05,]
+
+p_frac <- ggplot(scatter_dat, aes(x=HbA1c, y=Fraction, color=label)) + scale_color_manual(values=c(rgb(118,167,0,maxColorValue = 255),rgb(254,118,109,maxColorValue = 255)))+
+    geom_point()+theme_classic()+theme(text = element_text(size=15))+geom_smooth(method=lm, se=FALSE, fullrange=TRUE,col="black")
+										
+p_frac
+cor.test(scatter_dat$HbA1c,scatter_dat$Fraction)	
+```
+
+## Build Weighted Gene Co-expression Network through WGCNA for all cell types.
+
+Concatenating all CSE profile into a large gene expression matrix
+
+```{r}
+pancreas <- cell_type_pancreas <- NULL
+for(i in 1:ncol(tmp_pancreas$cell_type1)){
+ pancreas <- cbind(pancreas,egm_model1$X_k[,Fra_pancreas$theta[,i]!=0,i])
+ cell_type_pancreas <- c(cell_type_pancreas,rep(colnames(tmp_pancreas$cell_type1)[i],sum(Fra_pancreas$theta[,i]!=0)))
+}
+```
+
+Selecting suitable power value and build topological matrix
+
+```{r}
+powers = c(c(1:10), seq(from = 12, to=30, by=2))
+sft = pickSoftThreshold(t(pancreas), powerVector = powers, verbose = 5,networkType="signed")
+
+softPower = 10;
+adjacency = adjacency(t(pancreas), power = softPower,type="signed");
+TOM = TOMsimilarity(adjacency);
+dissTOM = 1-TOM
+```
+
+Plot the resulting clustering tree (dendrogram)
+```{r}
+geneTree = hclust(as.dist(dissTOM), method = "average");
+sizeGrWindow(12,9)
+plot(geneTree, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity",
+labels = FALSE, hang = 0.04);
+minModuleSize = 30;
+```
+
+Module identification using dynamic tree cut:
+```{r}
+dynamicMods = cutreeDynamic(dendro = geneTree, distM = dissTOM,
+deepSplit = 2, pamRespectsDendro = FALSE,
+minClusterSize = minModuleSize);
+
+dynamicColors = labels2colors(dynamicMods)
+table(dynamicColors)
+```
+
+Plot the dendrogram and colors underneath
+```{r}
+sizeGrWindow(8,6)
+plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut",
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05,
+main = "Gene dendrogram and module colors")
+```
+
+Cluster module eigengenes and dissimilarity of module eigengenes to build new tree
+```{r}
+MEList = moduleEigengenes(t(pancreas), colors = dynamicColors)
+MEs = MEList$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss = 1-cor(MEs);
+# Cluster module eigengenes
+METree = hclust(as.dist(MEDiss), method = "average");
+
+MEDissThres = 0.15
+# Plot the cut line into the dendrogram
+```
+
+Call an automatic merging function and merge module
+```{r}
+merge = mergeCloseModules(t(pancreas), dynamicColors, cutHeight = MEDissThres, verbose = 3)
+# The merged module colors
+mergedColors = merge$colors;
+# Eigengenes of the new merged modules:
+mergedMEs = merge$newMEs;
+```
+
+Plot cell type-specific co-expression modules
+```{r}
+sizeGrWindow(12, 9)
+plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors),
+c("Dynamic Tree Cut", "Merged dynamic"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+```
+
+Conducting the same analysis in bulk gene expression profile
+```{r}
+bulk <- log2(tmp_pancreas$bulk[rownames(pancreas),]+1)
+
+powers = c(c(1:10), seq(from = 12, to=30, by=2))
+sft = pickSoftThreshold(t(bulk), powerVector = powers, verbose = 5,networkType="signed")
+
+softPower = 12;
+adjacency_bulk = adjacency(t(bulk), power = softPower,type="signed");
+TOM_bulk = TOMsimilarity(adjacency_bulk);
+dissTOM_bulk = 1-TOM_bulk
+
+geneTree_bulk = hclust(as.dist(dissTOM_bulk), method = "average");
+# Plot the resulting clustering tree (dendrogram)
+sizeGrWindow(12,9)
+plot(geneTree_bulk, xlab="", sub="", main = "Gene clustering on TOM-based dissimilarity",
+labels = FALSE, hang = 0.04);
+minModuleSize = 30;
+# Module identification using dynamic tree cut:
+dynamicMods_bulk = cutreeDynamic(dendro = geneTree_bulk, distM = dissTOM_bulk,
+deepSplit = 2, pamRespectsDendro = FALSE,
+minClusterSize = minModuleSize);
+
+dynamicColors_bulk = labels2colors(dynamicMods_bulk)
+table(dynamicColors_bulk)
+# Plot the dendrogram and colors underneath
+sizeGrWindow(8,6)
+plotDendroAndColors(geneTree_bulk, cbind(dynamicColors_bulk),
+c("Acinar Expression Module"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+
+
+MEList_bulk = moduleEigengenes(t(bulk), colors = dynamicColors_bulk)
+MEs_bulk = MEList_bulk$eigengenes
+# Calculate dissimilarity of module eigengenes
+MEDiss_bulk = 1-cor(MEs_bulk);
+# Cluster module eigengenes
+METree_bulk = hclust(as.dist(MEDiss_bulk), method = "average");
+
+MEDissThres_bulk = 0.25
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres_bulk, col = "red")
+# Call an automatic merging function
+merge_bulk = mergeCloseModules(t(bulk), dynamicColors_bulk, cutHeight = MEDissThres_bulk, verbose = 3)
+# The merged module colors
+mergedColors_bulk = merge_bulk$colors;
+# Eigengenes of the new merged modules:
+mergedMEs_bulk = merge_bulk$newMEs;
+```
+
+Plot cell type-specific co-expression modules and bulk gene expression modules together
+```{r}
+plotDendroAndColors(geneTree, cbind(mergedColors,mergedColors_bulk),
+c("Cell Type Specific Module", "Bulk Module"),
+dendroLabels = FALSE, hang = 0.03,
+addGuide = TRUE, guideHang = 0.05)
+```
+
+## Identify cell type specific modules
+
+```{r}
+##visualize each module functions
+ct_matrix = matrix(0,nrow= nrow(Fra_pancreas$theta)*ncol(Fra_pancreas$theta),ncol=ncol(Fra_pancreas$theta))
+for(i in 1:ncol(ct_matrix) )ct_matrix[((i-1)*nrow(Fra_pancreas$theta)+1):(i*nrow(Fra_pancreas$theta)),i] = Fra_pancreas$theta[,i]
+colnames(ct_matrix) <- colnames(Fra_pancreas$theta)
+colnames(mergedMEs) <- gsub("ME","",colnames(mergedMEs))
+ct_matrix = ct_matrix[rowSums(ct_matrix)>0,]
+ct_matrix[ct_matrix!=0] = 1
+pheatmap(t(cor(mergedMEs,ct_matrix,method="p")),cluster_cols=FALSE,cluster_row=FALSE,border=FALSE)
+```
+
+## Conducting Go enrichment analysis for cell type-specific modules
+
+```{r}
+lightcyan_gene <- rownames(pancreas)[mergedColors=="lightcyan"]
+lightcyan_gene <- bitr(lightcyan_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_lightcyan <- as.data.frame(enrichGO(lightcyan_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE))
+
+lightgreen_gene <- rownames(pancreas)[mergedColors=="lightgreen"]
+lightgreen_gene <- bitr(lightgreen_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_lightgreen <- as.data.frame(enrichGO(lightgreen_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE))
+
+midnightblue_gene <- rownames(pancreas)[mergedColors=="midnightblue"]
+midnightblue_gene <- bitr(midnightblue_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_midnightblue <- as.data.frame(enrichGO(midnightblue_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE))
+
+purple_gene <- rownames(pancreas)[mergedColors=="purple"]
+purple_gene <- bitr(purple_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_purple <- as.data.frame(enrichGO(purple_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE))
+
+black_gene <- rownames(pancreas)[mergedColors=="black"]
+black_gene <- bitr(black_gene,fromType="SYMBOL",toType="ENTREZID",org.Hs.eg.db)
+goterm_black <- as.data.frame(enrichGO(black_gene[,2], ont="BP",pvalueCutoff = 0.05,qvalueCutoff = 0.05,OrgDb = org.Hs.eg.db,readable=TRUE))
+
+
+df_barMarker2 <- data.frame(pval = -log10((goterm_purple)[1:5,]$p.adjust),goterm=(goterm_purple)[1:5,]$Description)
+df_barMarker2$goterm_name <- factor(c((goterm_purple)[1:5,]$Description),levels=c(c((goterm_purple)[1:5,]$Description)[order(-log10((goterm_purple)[1:5,]$p.adjust),decreasing=FALSE)]))
+p_purple_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="purple")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+
+df_barMarker2 <- data.frame(pval = -log10((goterm_lightgreen)[1:5,]$p.adjust),goterm=(goterm_lightgreen)[1:5,]$Description)
+df_barMarker2$goterm_name <- factor(c((goterm_lightgreen)[1:5,]$Description),levels=c(c((goterm_lightgreen)[1:5,]$Description)[order(-log10((goterm_lightgreen)[1:5,]$p.adjust),decreasing=FALSE)]))
+p_lightgreen_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="lightgreen")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+
+df_barMarker2 <- data.frame(pval = -log10((goterm_lightcyan)[1:5,]$p.adjust),goterm=(goterm_lightcyan)[1:5,]$Description)
+df_barMarker2$goterm_name <- factor(c((goterm_lightcyan)[1:5,]$Description),levels=c(c((goterm_lightcyan)[1:5,]$Description)[order(-log10((goterm_lightcyan)[1:5,]$p.adjust),decreasing=FALSE)]))
+p_lightcyan_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="lightcyan")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+
+df_barMarker2 <- data.frame(pval = -log10((goterm_black)[1:5,]$p.adjust),goterm=(goterm_black)[1:5,]$Description)
+df_barMarker2$goterm_name <- factor(c((goterm_black)[1:5,]$Description),levels=c(c((goterm_black)[1:5,]$Description)[order(-log10((goterm_black)[1:5,]$p.adjust),decreasing=FALSE)]))
+p_black_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="black")+coord_flip()+theme_classic()+theme(text = element_text(size=15))	
+
+df_barMarker2 <- data.frame(pval = -log10((goterm_midnightblue)[1:5,]$p.adjust),goterm=(goterm_midnightblue)[1:5,]$Description)
+df_barMarker2$goterm_name <- factor(c((goterm_midnightblue)[1:5,]$Description),levels=c(c((goterm_midnightblue)[1:5,]$Description)[order(-log10((goterm_midnightblue)[1:5,]$p.adjust),decreasing=FALSE)]))
+p_midnightblue_go <-ggplot(data=df_barMarker2, aes(x=goterm_name, y=pval)) +
+    geom_bar(stat="identity",fill="midnightblue")+coord_flip()+theme_classic()+theme(text = element_text(size=15))
+```
+
+```{r}
+p_purple_go
+```
+
+```{r}
+p_lightgreen_go
+```
+
+```{r}
+p_lightcyan_go
+```
+
+```{r}
+p_black_go
+```
+
+```{r}
+p_midnightblue_go
+```
+
+## Visualize cell type specific module in heatmap through scater
+```{r}
+names(mergedColors) = rownames(pancreas)
+pancreas_sub <- pancreas[mergedColors %in% c("lightgreen","purple","lightcyan","black","midnightblue"),]
+mergedColors_sub <- mergedColors[mergedColors %in% c("lightgreen","purple","lightcyan","black","midnightblue")]
+colnames(pancreas_sub) <- paste0("Sample-",1:ncol(pancreas_sub),sep="")
+
+pancreas_sub_new <- mergedColors_sub_new <- NULL
+for(i in c("midnightblue","black","lightcyan","lightgreen","purple")){
+ pancreas_sub_new <- rbind(pancreas_sub_new, pancreas_sub[mergedColors_sub %in% i,])
+ mergedColors_sub_new <- c(mergedColors_sub_new, mergedColors_sub[mergedColors_sub %in% i])
+}
+pancreas_sub <- pancreas_sub_new
+mergedColors_sub <- mergedColors_sub_new
+rm(pancreas_sub_new,mergedColors_sub_new)
+gc()
+
+pancreas_sub <- pancreas_sub[apply(pancreas_sub,1,var)>1e-4,]
+sce_pancreas <- SingleCellExperiment(assays = list(logcounts = pancreas_sub))
+sce_pancreas$celltype <- cell_type_pancreas
+annotation_row= data.frame(module=mergedColors_sub[rownames(pancreas_sub)])
+ann_colors <- list(module = c(midnightblue="midnightblue",
+                              black ="black",
+							  lightcyan="lightcyan",
+							  lightgreen="lightgreen",
+							  purple="purple"))
+p <- scater::plotHeatmap(sce_pancreas, features = rownames(pancreas_sub), 
+                    center = TRUE, zlim = c(-0.1, 0.1), colour_columns_by = "celltype", show_colnames = FALSE,show_rownames = FALSE, 
+                    cluster_cols = FALSE,annotation_row=annotation_row,cluster_row=FALSE,fontsize_row = 6, color = colorRampPalette(c("purple", "black", 
+                                                                                   "yellow"))(90))	
+p
+```
+
+
+
