@@ -26,7 +26,8 @@ Both scripts could be downloaded through following links:
 
 * [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ESCO_path.R)
 
-* [Deconvolution analysis for arthritis patients](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Analysis_code_for_monocyte.R)
+### Real Data analysis
+* [Deconvolution analysis for arthritis patients](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
 ## Code for supplementary note
 * [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(mutilPaltforms).R)
 
