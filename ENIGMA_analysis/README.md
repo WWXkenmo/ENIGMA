@@ -16,6 +16,7 @@ Both scripts could be downloaded through following links:
 [DEG_analysis_uile_function.R](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis_uile_function.R)
 
 ## Code for main text
+### Simulation analysis
 * [Using tumor scRNA-seq data to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
 * [Simulate cell type-specific gene expression profile to assess CTS-DEGs detection accuracy](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(DEG).R)
@@ -27,7 +28,12 @@ Both scripts could be downloaded through following links:
 * [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ESCO_path.R)
 
 ### Real Data analysis
-* [Deconvolution analysis for arthritis patients](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
+#### Deconvolution analysis for arthritis patients(HTML format): 
+* [link](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/RA/Deconvolution-Analysis-for-Arthritis-Patients.html)
+#### Deconvolution analysis for T2D patients(HTML format): 
+* [Part-1](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
+* [Part-2](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/The-deconvolution-analysis-in-pancreas-islet-tissues.html)
+
 ## Code for supplementary note
 * [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(mutilPaltforms).R)
 
