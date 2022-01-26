@@ -18,7 +18,7 @@ ENIGMA_trace_norm(
   verbose = FALSE,
   pos = TRUE,
   Normalize = TRUE,
-  Norm.method = "PC",
+  Norm.method = "frac",
   preprocess = "log",
   loss_his = TRUE,
   model_tracker = FALSE,
@@ -61,7 +61,7 @@ Default: 0.0001}
 
 \item{Normalize}{Whether perform normalization on resulted expression profile. Default: TRUE}
 
-\item{Norm.method}{Method used to perform normalization. User could choose PC, frac or quantile.}
+\item{Norm.method}{Method used to perform normalization. User could choose PC, frac or quantile. Default: frac}
 
 \item{preprocess}{Method used to perform variance stablization preprocessing. User could choose sqrt, log or none.sqrt: square root transformation; log: log2(*+1) transformation; none: no data transformation.}
 

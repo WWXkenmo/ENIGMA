@@ -46,7 +46,7 @@
 #' Whether perform normalization on resulted expression profile. Default: TRUE
 #'
 #' @param Norm.method
-#' Method used to perform normalization. User could choose PC, frac or quantile.
+#' Method used to perform normalization. User could choose PC, frac or quantile. Default: frac
 #' 
 #' @param preprocess
 #' Method used to perform variance stablization preprocessing. User could choose sqrt, log or none.sqrt: square root transformation; log: log2(*+1) transformation; none: no data transformation.
@@ -76,7 +76,7 @@
 #'
 #' @export
 #'
-ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "PC",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=FALSE){
+ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "frac",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=FALSE){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
