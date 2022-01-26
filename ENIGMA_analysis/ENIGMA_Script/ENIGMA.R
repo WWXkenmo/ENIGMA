@@ -2,136 +2,161 @@
 ##################utile functions#####################
 ####Loss curver plot
 #Using nuclear norm to regularize the object function
-plotLossCurve <- function(loss_history,rlgType = "trace_norm",scale = "log",cowplot=TRUE,all=TRUE,plotTerm = 1){
-   require("ggplot2")
-   loss_history <- loss_history[-1,]
-   if(rlgType == "trace_norm"){
-   df <- data.frame(Iteration = rep(c(1:nrow(loss_history)),(ncol(loss_history)+1)),LossType = 
-						c(rep("Distance to observed mixture",nrow(loss_history)),
-                        rep("Distance to reference",nrow(loss_history)),
-						rep("Rank regularization",nrow(loss_history)),
-						rep("Over All",nrow(loss_history))),Loss = c(as.numeric(as.matrix(loss_history)),rowSums(loss_history)))
-
-   df1 <- subset(df,df$LossType %in% "Distance to observed mixture")
-   df2 <- subset(df,df$LossType %in% "Distance to reference")
-   df3 <- subset(df,df$LossType %in% "Rank regularization")
-   df4 <- subset(df,df$LossType %in% "Over All")
-   if(scale == "log"){
-   df1$Loss <- log(df1$Loss+1)
-   df2$Loss <- log(df2$Loss+1)
-   df3$Loss <- log(df3$Loss+1)
-   df4$Loss <- log(df4$Loss+1)
-   }
-   g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to observed mixture')
-   g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to reference')
-   g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Rank regularization')
-   g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Overall')
-   if(all){				
-   if(cowplot){
-   require("cowplot")
-   plot_grid(g1,g2,g3,g4,nrow=2)
-   }else{
-   if(scale == "log"){ df$Loss <- log(df$Loss+1) }
-   gg <- ggplot(data=df, aes(x=Iteration, y=Loss, group=LossType, color=LossType)) + geom_line() + geom_point()+ theme_minimal() +
-         labs(x = 'iteration',y = 'log Loss')
-   gg
-   }}else{
-   if(plotTerm == 1){
-     print(g1)}
-   if(plotTerm == 2){
-     print(g2)}
-   if(plotTerm == 3){
-	 print(g3)}
-   if(plotTerm == 4){
-     print(g4)}
-   }
-   }
-}
-
 plotMultiLossCurve <- function(loss_history_list,rlgType = "trace_norm",scale = "log",shape = FALSE,name_prefix,all=TRUE,plotTerm = 1){
-   require("ggplot2")
-   require("cowplot")
-   
-   if(rlgType == "trace_norm"){
-   df_list <- list()
-   for(l in 1:length(loss_history_list)){
-   loss_history <- loss_history_list[[l]]
-   loss_history_list[[l]] <- loss_history
-   df <- data.frame(Iteration = rep(c(1:nrow(loss_history)),(ncol(loss_history)+1)),LossType = 
-						c(rep("Distance to observed mixture",nrow(loss_history)),
-                        rep("Distance to reference",nrow(loss_history)),
-						rep("Rank regularization",nrow(loss_history)),
-						rep("Over All",nrow(loss_history))),Loss = c(as.numeric(as.matrix(loss_history)),rowSums(loss_history)))
-   df_list[[l]] <- df
-   }
-   names(df_list) <- names(loss_history_list)
-   name_vec <- NULL
-   for(i in 1:length(loss_history_list)) name_vec <- c(name_vec,rep(names(loss_history_list)[i],nrow(loss_history_list[[i]])))
-   
-   df1 <- df2 <- df3 <- df4 <- NULL
-   for(l in 1:length(loss_history_list)){
-   df1 <- rbind(df1, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to observed mixture"))
-   df2 <- rbind(df2, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to reference"))
-   df3 <- rbind(df3, subset(df_list[[l]],df_list[[l]]$LossType %in% "Rank regularization"))
-   df4 <- rbind(df4, subset(df_list[[l]],df_list[[l]]$LossType %in% "Over All"))
-   }
-   id <- c(colnames(df1),"Method")
-   df1 <- as.data.frame(cbind(df1, name_vec))
-   df2 <- as.data.frame(cbind(df2, name_vec))
-   df3 <- as.data.frame(cbind(df3, name_vec))
-   df4 <- as.data.frame(cbind(df4, name_vec))
-   colnames(df1) <- colnames(df2) <- colnames(df3) <- colnames(df4) <- id
-   
-   
-   if(scale == "log"){
-   df1$Loss <- log(df1$Loss+1)
-   df2$Loss <- log(df2$Loss+1)
-   df3$Loss <- log(df3$Loss+1)
-   df4$Loss <- log(df4$Loss+1)
-   }
-   
-   if(!shape){
-   g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
-   g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
-   g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Rank regularization',colour = name_prefix)
-   g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Overall',colour = name_prefix)
-   }else{
-   g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
-   g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
-   g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Rank regularization',colour = name_prefix)
-   g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
-                y = 'log Loss',title = 'Overall',colour = name_prefix)
-   }
-   if(all){
-   if(scale != "log"){p1 <- plot_grid(g1+labs(y = 'Loss'),g2+labs(y = 'Loss'),g3+labs(y = 'Loss'),g4+labs(y = 'Loss'),nrow=2);print(p1)}
-   if(scale == "log"){p1 <- plot_grid(g1,g2,g3,g4,nrow=2);print(p1)}
-   }else{
-   if(plotTerm == 1){
-     if(scale != "log") print(g1+labs(y = 'Loss'))
-	 if(scale == "log") print(g1)}
-   if(plotTerm == 2){
-     if(scale != "log") print(g2+labs(y = 'Loss'))
-	 if(scale == "log") print(g2)}
-   if(plotTerm == 3){
-	 if(scale != "log") print(g3+labs(y = 'Loss'))
-	 if(scale == "log") print(g3)}
-   if(plotTerm == 4){
-     if(scale != "log") print(g4+labs(y = 'Loss'))
-	 if(scale == "log") print(g4)}
-   }
-   }
+    require("ggplot2")
+    require("cowplot")
+    
+    if(rlgType == "trace_norm"){
+        df_list <- list()
+        for(l in 1:length(loss_history_list)){
+            loss_history <- loss_history_list[[l]]
+            loss_history_list[[l]] <- loss_history
+            df <- data.frame(Iteration = rep(c(1:nrow(loss_history)),(ncol(loss_history)+1)),LossType = 
+                                 c(rep("Distance to observed mixture",nrow(loss_history)),
+                                   rep("Distance to reference",nrow(loss_history)),
+                                   rep("Rank regularization",nrow(loss_history)),
+                                   rep("Over All",nrow(loss_history))),Loss = c(as.numeric(as.matrix(loss_history)),rowSums(loss_history)))
+            df_list[[l]] <- df
+        }
+        names(df_list) <- names(loss_history_list)
+        name_vec <- NULL
+        for(i in 1:length(loss_history_list)) name_vec <- c(name_vec,rep(names(loss_history_list)[i],nrow(loss_history_list[[i]])))
+        
+        df1 <- df2 <- df3 <- df4 <- NULL
+        for(l in 1:length(loss_history_list)){
+            df1 <- rbind(df1, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to observed mixture"))
+            df2 <- rbind(df2, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to reference"))
+            df3 <- rbind(df3, subset(df_list[[l]],df_list[[l]]$LossType %in% "Rank regularization"))
+            df4 <- rbind(df4, subset(df_list[[l]],df_list[[l]]$LossType %in% "Over All"))
+        }
+        id <- c(colnames(df1),"Method")
+        df1 <- as.data.frame(cbind(df1, name_vec))
+        df2 <- as.data.frame(cbind(df2, name_vec))
+        df3 <- as.data.frame(cbind(df3, name_vec))
+        df4 <- as.data.frame(cbind(df4, name_vec))
+        colnames(df1) <- colnames(df2) <- colnames(df3) <- colnames(df4) <- id
+        
+        
+        if(scale == "log"){
+            df1$Loss <- log(df1$Loss+1)
+            df2$Loss <- log(df2$Loss+1)
+            df3$Loss <- log(df3$Loss+1)
+            df4$Loss <- log(df4$Loss+1)
+        }
+        
+        if(!shape){
+            g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
+            g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
+            g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Rank regularization',colour = name_prefix)
+            g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Overall',colour = name_prefix)
+        }else{
+            g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
+            g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
+            g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Rank regularization',colour = name_prefix)
+            g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Overall',colour = name_prefix)
+        }
+        if(all){
+            if(scale != "log"){p1 <- plot_grid(g1+labs(y = 'Loss'),g2+labs(y = 'Loss'),g3+labs(y = 'Loss'),g4+labs(y = 'Loss'),nrow=2);print(p1)}
+            if(scale == "log"){p1 <- plot_grid(g1,g2,g3,g4,nrow=2);print(p1)}
+        }else{
+            if(plotTerm == 1){
+                if(scale != "log") print(g1+labs(y = 'Loss'))
+                if(scale == "log") print(g1)}
+            if(plotTerm == 2){
+                if(scale != "log") print(g2+labs(y = 'Loss'))
+                if(scale == "log") print(g2)}
+            if(plotTerm == 3){
+                if(scale != "log") print(g3+labs(y = 'Loss'))
+                if(scale == "log") print(g3)}
+            if(plotTerm == 4){
+                if(scale != "log") print(g4+labs(y = 'Loss'))
+                if(scale == "log") print(g4)}
+        }
+    }else if(rlgType == "L2_max_norm"){
+        df_list <- list()
+        for(l in 1:length(loss_history_list)){
+            loss_history <- loss_history_list[[l]]
+            loss_history_list[[l]] <- loss_history
+            df <- data.frame(Iteration = rep(c(1:nrow(loss_history)),(ncol(loss_history)+1)),LossType = 
+                                 c(rep("Distance to observed mixture",nrow(loss_history)),
+                                   rep("Distance to reference",nrow(loss_history)),
+                                   rep("Maximum L2 norm regularization",nrow(loss_history)),
+                                   rep("Over All",nrow(loss_history))),Loss = c(as.numeric(as.matrix(loss_history)),rowSums(loss_history)))
+            df_list[[l]] <- df
+        }
+        names(df_list) <- names(loss_history_list)
+        name_vec <- NULL
+        for(i in 1:length(loss_history_list)) name_vec <- c(name_vec,rep(names(loss_history_list)[i],nrow(loss_history_list[[i]])))
+        
+        df1 <- df2 <- df3 <- df4 <- NULL
+        for(l in 1:length(loss_history_list)){
+            df1 <- rbind(df1, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to observed mixture"))
+            df2 <- rbind(df2, subset(df_list[[l]],df_list[[l]]$LossType %in% "Distance to reference"))
+            df3 <- rbind(df3, subset(df_list[[l]],df_list[[l]]$LossType %in% "Maximum L2 norm regularization"))
+            df4 <- rbind(df4, subset(df_list[[l]],df_list[[l]]$LossType %in% "Over All"))
+        }
+        id <- c(colnames(df1),"Method")
+        df1 <- as.data.frame(cbind(df1, name_vec))
+        df2 <- as.data.frame(cbind(df2, name_vec))
+        df3 <- as.data.frame(cbind(df3, name_vec))
+        df4 <- as.data.frame(cbind(df4, name_vec))
+        colnames(df1) <- colnames(df2) <- colnames(df3) <- colnames(df4) <- id
+        
+        
+        if(scale == "log"){
+            df1$Loss <- log(df1$Loss+1)
+            df2$Loss <- log(df2$Loss+1)
+            df3$Loss <- log(df3$Loss+1)
+            df4$Loss <- log(df4$Loss+1)
+        }
+        
+        if(!shape){
+            g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
+            g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
+            g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Maximum L2 norm regularization',colour = name_prefix)
+            g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                              y = 'log Loss',title = 'Overall',colour = name_prefix)
+        }else{
+            g1 <- ggplot(data=df1, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Distance to observed mixture',colour = name_prefix)
+            g2 <- ggplot(data=df2, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Distance to reference',colour = name_prefix)
+            g3 <- ggplot(data=df3, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Maximum L2 norm regularization',colour = name_prefix)
+            g4 <- ggplot(data=df4, aes(x=Iteration, y=Loss, group=Method, color=Method,shape=Method)) + geom_line() + geom_point()+ theme_minimal() + labs(x = 'iteration',
+                                                                                                                                                           y = 'log Loss',title = 'Overall',colour = name_prefix)
+        }
+        if(all){
+            if(scale != "log"){p1 <- plot_grid(g1+labs(y = 'Loss'),g2+labs(y = 'Loss'),g3+labs(y = 'Loss'),g4+labs(y = 'Loss'),nrow=2);print(p1)}
+            if(scale == "log"){p1 <- plot_grid(g1,g2,g3,g4,nrow=2);print(p1)}
+        }else{
+            if(plotTerm == 1){
+                if(scale != "log") print(g1+labs(y = 'Loss'))
+                if(scale == "log") print(g1)}
+            if(plotTerm == 2){
+                if(scale != "log") print(g2+labs(y = 'Loss'))
+                if(scale == "log") print(g2)}
+            if(plotTerm == 3){
+                if(scale != "log") print(g3+labs(y = 'Loss'))
+                if(scale == "log") print(g3)}
+            if(plotTerm == 4){
+                if(scale != "log") print(g4+labs(y = 'Loss'))
+                if(scale == "log") print(g4)}
+        }
+    }
 }
+
 
 ##########################
 
@@ -391,16 +416,12 @@ SVT_RM_value <- function(Mat){
 
 
 ###################################S_mode_correction##################################################
+require("sva")
+require("purrr")
 
-remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_sub_ct=NULL, n_pseudo_bulk=1000,ncores=8) {
-    require("doParallel")
-	require("sva")
-	require("nnls")
-	require("tibble")
-	require("purrr")
-	
-	cat(date(), "generating pseudo bulk... \n")
-    pseudo_bulk_main_ct = generate_pseudo_bulk_from_scRNA( ref_eset, varname_main_ct, n = n_pseudo_bulk,ncores = ncores )
+remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_sub_ct=NULL, n_pseudo_bulk=1000) {
+    cat(date(), "generating pseudo bulk... \n")
+    pseudo_bulk_main_ct = generate_pseudo_bulk_from_scRNA( ref_eset, varname_main_ct, n = n_pseudo_bulk )
     colnames(pseudo_bulk_main_ct$mat) = paste(varname_main_ct, seq_len(ncol(pseudo_bulk_main_ct$mat)), sep = "_")
     
     if(is.null(varnames_sub_ct)) pseudo_bulk_subs = NULL
@@ -445,13 +466,7 @@ remove_batch_effect <- function(bulk_eset, ref_eset, varname_main_ct, varnames_s
 }
 
 
-generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000,ncores=ncores) {
-    require("doParallel")
-	require("sva")
-	require("nnls")
-	require("tibble")
-	require("purrr")
-	
+generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000) {
     frac_init = table( pData(ref_eset)[,ct_varname] )/nrow(pData(ref_eset))
     
     frac = map2_df(frac_init, frac_init*2, rnorm, n=n) %>% sapply(function(x) x)
@@ -462,35 +477,20 @@ generate_pseudo_bulk_from_scRNA <- function(ref_eset, ct_varname, n=1000,ncores=
     # normalization
     frac <- t(t(frac) %*% diag(1/rowSums(frac)))
     
-    colnames(frac) <- names(table( pData(ref_eset)[,ct_varname] ))
-    
-	bulk_per_sample = function(x,ct_varname,ref_eset){
-	require("magrittr")
-	require("Biobase")
-	        Ma = lapply( pData(ref_eset)[,ct_varname] %>% unique, function(ct) {
+    M_star <- NULL
+    for(i in 1:nrow(frac)){
+        Ma = lapply( pData(ref_eset)[,ct_varname] %>% unique, function(ct) {
             sample_ids = subset( pData(ref_eset), eval(parse( text = paste0(ct_varname, "==\"", ct, "\"") )) ) %>%
                 rownames %>%
-                sample( 1000*x[ct], replace = TRUE )
+                sample( 1000*frac[i,ct], replace = TRUE )
             exprs(ref_eset)[,colnames(ref_eset) %in% sample_ids]
         } ) %>%
             do.call(cbind, .)
-			
-			Ma = rowSums(Ma)
-			Ma
-	}
-	##
-	writeLines( paste("using ",ncores," cores...",sep=""))
-	cl = makeCluster(ncores)
-    registerDoParallel(cl)
-    getDoParWorkers()
-    #envir %>% appendEnv(parent_envir)
-    ns = nrow(frac)
-	result = foreach(j = 1:ns, .errorhandling = 'pass') %dopar% {
-	bulk_per_sample(frac[j,],ref_eset = ref_eset,ct_varname = ct_varname)
-	}
-	result = do.call(cbind, result)
-    stopCluster(cl)
-    return(list( frac=frac, mat=result ))
+        
+        M_star <- cbind(M_star,rowSums(Ma))
+    }
+    
+    return(list( frac=frac, mat=M_star ))
 }
 
 
@@ -662,9 +662,9 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
         loss.obj <- sub_loss(X, P_old_pre, theta, alpha,beta,R)
         if(verbose) writeLines( sprintf("Total delta_loss: %f, %s", abs(loss_new.obj$val-loss.obj$val), date() ) )
         if(verbose) writeLines( paste("part1:",loss_new.obj$part1," part2:",loss_new.obj$part2," part3:",loss_new.obj$part3,sep="") )   
-
+		
         if(Normalize){
-        if(pre.process == "log") X_k_m <- 2^P_old - 1
+		if(pre.process == "log") X_k_m <- 2^P_old - 1
         if(pre.process == "sqrt") X_k_m <- P_old^2
 		if(pre.process == "none") X_k_m <- P_old
 		pp_list = c("log","sqrt","none")
@@ -678,7 +678,11 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
         if(Norm.method == "PC"){
             for(k in 1:dim(X_k_m)[3]){
                 exp <- X_k_m[,,k]
-                exp.scale <- t(apply(exp,1,scale))
+				scale_x <- function(x){
+				if(var(x)==0){x <- x - mean(x)}else{x <- scale(x)}
+				x
+				}
+                exp.scale <- t(apply(exp,1,scale_x))
 				###chose the PC with the highest correlation with cell type fractions
 				d <- sqrt(svd(exp.scale)$d)
 				d <- d / sum(d)
@@ -701,6 +705,13 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
                 X_k_norm[,,k] <- exp.norm
             }
         }
+		
+		if(Norm.method == "quantile"){
+		     for(k in 1:dim(X_k_m)[3]){
+		        X_k_norm[,,k] <- normalize.quantiles(X_k_norm[,,k])
+		     }
+		}
+		
     }
 	writeLines( paste("Done! \nConverge in ",iter.exp," steps",sep="") )
     # return cell type specific gene expression matrix
@@ -713,6 +724,7 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
 	if(Normalize) res$X_k_norm = X_k_norm
 	return( res )
 }
+
 
 
 ###############################################################
@@ -741,7 +753,7 @@ getT <- function(index,X,theta_m,O,alpha){
 
 
 ###initialize the matrix X, Y, A
-cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=100,solver = "admm",verbose=FALSE,X_int=NULL,loss_his=TRUE,Normalize=TRUE,Norm.method = "PC",pre.process = "log",pos=TRUE){
+cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=100,solver = "admm",verbose=FALSE,X_int=NULL,loss_his=TRUE,Normalize=TRUE,Norm.method = "PC",pre.process = "log",pos=TRUE,infer=FALSE){
     solver_list = c("admm","admm_fast","adaptive_admm","proximalpoint")
 	msg = paste0("should be one of ", paste(solver_list, collapse = ", "), 
 	".")
@@ -894,18 +906,18 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
 		Y_k <- Y_k_1
 		A_k <- A_k_1
 		
-		ratio <- NULL
-		##update X
-		updated_X <- getX(O,theta,R,A_k,Y_k,alpha,gamma)
+	    ratio <- NULL
 		for(j in 1:ncol(theta)){
 			#a <- as.matrix(a.m[j,])
-			X_k_1[,,j] <- updated_X[,,j]
-			Y_k_1[,,j] <- SVT_RM(((A_k[,,j]/gamma)+X_k_1[,,j]))
-			
+			T_k_j <- getT(j,X_k,theta,O,alpha)
+			X_k_1[,,j] <- ((1-alpha)*as.matrix(R[,j])%*%t(a) - A_k[,,j] + gamma*Y_k[,,j] - T_k_j)%*%F[,,j]
+			Y_k_1[,,j] <- SVT(((A_k[,,j]/gamma)+X_k_1[,,j]),(beta*theta_hat[j])/gamma)
+
 			A_k_1[,,j] <- A_k[,,j] + gamma*(X_k_1[,,j]-Y_k_1[,,j])
 			ratio <- c(ratio, sum( (X_k_1[,,j]-X_k[,,j])^2 )/(nrow(X[,,j])*ncol(X[,,j])))
 		}
-		r <- loss(O,X_k,theta,alpha,1,R)
+
+		r <- loss(O,X_k,theta,alpha,beta,R)
 		if(verbose){
 		#print matrix ratio distance or absolute distance
 		print <- paste("CSE inference step ",k," \n",sep="")
@@ -937,7 +949,7 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
             
             ratio <- c(ratio, sum( (X_k_1[,,j]-X_k[,,j])^2 )/(nrow(X[,,j])*ncol(X[,,j])))
         }
-		r <- loss(O,X_k,theta,alpha,1,R)
+		r <- loss(O,X_k,theta,alpha,beta,R)
 		if(verbose){
 		#print matrix ratio distance or absolute distance
 		print <- paste("CSE inference step ",k," \n",sep="")
@@ -960,8 +972,8 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
 		#Doing PC or Cell Fractions Normalization
 		if(pos) X_k[X_k<0] <- 0
 		if(Normalize){
-		writeLines("Normaliztion...")
-        if(pre.process == "log") X_k_m <- 2^X_k - 1
+		writeLines("Normalization...")
+		if(pre.process == "log") X_k_m <- 2^X_k - 1
 	    if(pre.process == "sqrt") X_k_m <- X_k^2
 		if(pre.process == "none") X_k_m <- X_k
 		pp_list = c("log","sqrt","none")
@@ -997,12 +1009,46 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
                 X_k_norm[,,k] <- exp.norm
             }
         }
+		
+		if(Norm.method == "total"){
+		     for(k in 1:dim(X_k_m)[3]){
+		        X_k_norm[,,k] <- X_k_norm[,,k] %*% diag(10000/colSums(X_k_norm[,,k]))
+			 }
+		}
+		
+		if(Norm.method == "quantile"){
+		     for(k in 1:dim(X_k_m)[3]){
+		        X_k_norm[,,k] <- normalize.quantiles(X_k_norm[,,k])
+			 }
+		}
         }
-
+    if(verbose) cat('Optimizing cell type proportions... \n')
+    if(infer){
+        if(Normalize) CSE = X_k_norm
+        if(!Normalize) CSE = X_k_m
+        theta_new <- NULL
+        for(j in 1:ncol(O)){
+            Exp <- as.matrix(O[,j])
+            rownames(Exp) <- rownames(CSE[,j,])
+            colnames(Exp) <- colnames(O)[j]
+            x <- CSE[,j,]
+            x <- apply(x,2,scale)
+            lm.o <- rlm(Exp ~ as.matrix(x),maxit=150)
+            coef.v <- lm.o$coefficients[-1]
+            coef.v[which(coef.v < 0)] <- 0
+            total <- sum(coef.v)
+            coef.v <- coef.v/total
+            theta_new <- rbind(theta_new,coef.v)
+        }
+        colnames(theta_new) <- colnames(theta)
+        rownames(theta_new) <- colnames(O);theta <- theta_new
+    }
+	
     writeLines( paste("Done! \nConverge in ",steps," steps",sep="") )
     res <- list()
     res$X_k <- X_k
     res$loss_history <- loss
+	res$theta <- theta
     if(Normalize) res$X_k_norm <- X_k_norm
     res
 }
