@@ -1,3 +1,15 @@
+## Notes for installation
+our newest version of ENIGMA could be downloaded through following step!
+### 1. prepare the required packages of ENIGMA
+```
+install.packages(c("Matrix","S4Vectors","corpcor","MASS","e1071","ggplot2","cowplot","magrittr","purrr","tibble","nnls","doParallel","tidyr","plyr"))
+BiocManager::install(c("SingleCellExperiment","scater","Biobase","SummarizedExperiment","sva","preprocessCore"))
+```
+### 2. install ENIGMA
+```
+devtools::install_github("WWXKenmo/ENIGMA")
+```
+
 ## News
 ### release v1.3
 1. add plotLossCurve to visualize the training
@@ -5,23 +17,10 @@
 3. add new solvers to trace norm model
 4. improve the ENIGMA_class function
 
-The previous versions of ENIGMA are delated, user could downloaded the latest version through
-```
-devtools::install_github("WWXKenmo/ENIGMA")
-```
-
-
 ### release v1.1
 1. Fixed the bugs in batch_correct
 2. Add new functions to re-normalized inferred CSE
 3. Update new tutorial
-
-User could install latest version ENIGMA through following command
-```
-install.packages("ENIGMA_v1.1.tar.gz",repos=NULL, type="source",INSTALL_opts=c("--no-multiarch"))
-```
-User could do benchmark through simulation, following this [code](https://github.com/WWXkenmo/ENIGMA/blob/main/cell_heterogeneity.R) to reproduce following figure
-![figure](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/overall.png)
 
 ## DEconvolution based on Regularized Matrix Completion algorithm (ENIGMA)
 ![ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig1.png)
@@ -49,17 +48,16 @@ For usage examples and guided walkthroughs, check the `vignettes` directory of t
 
 * [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
 * [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
-## Install
-```
-devtools::install_github("WWXKenmo/ENIGMA")
-```
+
 Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package. 
 
-## Required Packages
-sva, mgcv, nlme, genefilter, BiocParallel, purrr, MASS, nnls
-
 ## Note
-This is the alpha version of ENIGMA
+Fundamental hypotheses of the two models of ENIGMA
+
+**Less heterogenous hypothesis (trace norm model)** : The inferred cell type-specific gene expression matrix represents the expression profile of a cell type, while the bulk expression represents the mixture of different cell types of heterogeneous tissues or samples, so there exists some variation in bulk expression driven by the latent cell type compositional change but not the gene expression alteration within a cell type. Therefore, it is natural to hypothesize that the CSE profile is less heterogeneous than bulk expression. We also used the bulk expression matrix as the initialization matrix of each cell type, which can ensure our inferred CSE matrices to have lower rank than bulk expression. Second, low-rank model is also widely used in gene expression imputation or prediction algorithms (ref), because it is universally known that in many biological processes, genes do not act in a solitary manner and rather interact with other genes to play the function. Those interactions make the expression levels of genes to be interdependent. The existence of gene collinearity can result in a highly correlated data matrix. So, assuming the gene expression values lie on a low-dimensional linear subspace, the resulting data matrix may be a low-rank matrix. Therefore, we used trace norm regularizer to promoting reduced rank cell type-specific gene expression matrix.
+
+**Hidden variable hypothesis (maximum l_2 norm model)** : Most of cell type deconvolution algorithms, including ours, are reference-based deconvolution. Using reference-based methods could provide a robust and cost-effective in-silico way to understand the heterogeneity of bulk samples. It also assumes the existence of prior knowledge on the types of cells existing in a sample. These methods may fail to perform accurately when the data includes rare or otherwise unknown cell types with no references incorporated in the algorithm. Therefore, our reconstituted bulk expression profile (Xθ^T) may not include the variation from unknown rare cell types. Ideally, the observed matrix O would be more informative in our reconstituted bulk expression profile (Xθ^T). In other word, the observed bulk expression matrix would have higher rank than Xθ^T. Under this hypothesis, we need to reduce the rank of Xθ^T. We have proved mathematically that controlling the trace norm of reconstituted bulk expression profile (Xθ^T) equals to the maximum L2 norm (X) of CSE profile (see loss design section of Supplementary Notes).
+
 
 ## Tutorial Dataset
 the datasets could be downloaded from this repository. ([The link to datasets](https://github.com/WWXkenmo/ENIGMA/tree/master))
