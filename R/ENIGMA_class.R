@@ -209,6 +209,6 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "sort", "aggre"),
 	## return bulk and object
 	object@bulk = assay( object@raw_input$bulk, "raw" )
 	object@ref = assay( object@raw_input$ref, "raw" )
-	if(ref_type == "sort"){colnames(object@ref) = object@raw_input$ref$celltype}
+	if(ref_type %in% c("aggre","sort")){colnames(object@ref) = colData(object@raw_input$ref)[,1]}
     return(object)
 }

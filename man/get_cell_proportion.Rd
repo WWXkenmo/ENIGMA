@@ -4,12 +4,14 @@
 \alias{get_cell_proportion}
 \title{Calculate the proportion of each cell types in bulk samples}
 \usage{
-get_cell_proportion(object, max.iter = 500)
+get_cell_proportion(object, max.iter = 500, method = "RLR", nu.v)
 }
 \arguments{
 \item{object}{ENIGMA object}
 
 \item{max.iter}{the maximum iteration times for robust linear model. Default = 500}
+
+\item{nu.v}{parameter needed for nu-regression, user could input a vector of nu, and CIBERSORT would automatically select the nu with the best fitness with users' data.}
 }
 \value{
 the ENIGMA object contains the cell type fractions in object@result_cell_proportion
@@ -19,6 +21,7 @@ Calculate the proportion of each cell types in bulk samples
 }
 \examples{
 \dontrun{
-get_cell_proportion(egm)
+egm = get_cell_proportion(egm)
+egm@result_cell_proportion
 }
 }

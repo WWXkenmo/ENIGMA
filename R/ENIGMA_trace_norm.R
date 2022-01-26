@@ -1,5 +1,6 @@
 #' @title ENIGMA trace norm version
 #'
+#' @description trace norm version is the alternative version of ENIGMA, which is the regularized weighted matrix completion to constraint the trace norm of inferred cell type-specific gene expression matrix.
 #' @param object ENIGMA object
 #'
 #' @param alpha
@@ -60,8 +61,8 @@
 #' name of the model
 #'
 #'
-#' @param random
-#' random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE
+#' @param X_int
+#' initialization for CSE profiles, an array object with three dimensions (the number of genes * the number of samples * the number of cell types), if user input a matrix (the number of genes * the number of samples), each cell type would be assigned the same start matrix.
 #'
 #' @return ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 #'
@@ -75,7 +76,7 @@
 #'
 #' @export
 #'
-ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "PC",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,random=FALSE){
+ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=NULL,epsilon=NULL,max.iter=1000,solver = "admm",verbose=FALSE,pos=TRUE,Normalize=TRUE,Norm.method = "PC",preprocess = "log",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=FALSE){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -109,10 +110,30 @@ ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=N
                                colnames(O),
                                colnames(theta))
     )
-    for(i in 1:ncol(theta)){
-        if(!random){X[,,i] <- O}else{nse = rnorm((dim(O)[1]*dim(O)[2])); nse[nse<0] <- 0; X[,,i] <- O + matrix(nse,nrow(O),ncol(O))}
+    X_int_m = array(0,
+              dim = c( nrow(O),
+                       ncol(O),
+                       ncol(theta)),
+              dimnames = list( rownames(O),
+                               colnames(O),
+                               colnames(theta))
+    )
+    if(is.null(X_int) == FALSE){
+       if(length(dim(X_int)) == 2){
+           for(i in 1:ncol(theta)){
+           X_int_m[,,i] = X_int
+           }
+        }
+       if(length(dim(X_int)) == 3){
+          for(i in 1:ncol(theta)){
+           X_int_m[,,i] = X_int[,,i]
+          }
+        }
     }
-
+    for(i in 1:ncol(theta)){
+        if(is.null(X_int)){X[,,i] <- O}else{X[,,i] <- X_int_m[,,i]}
+    }
+    rm(X_int, X_int_m);gc()
     ###
     A <- Y <- X
     A_k_1 <- A_k <- A
@@ -153,7 +174,7 @@ ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=N
     for(i in 1:ncol(theta)){F[,,i] <- getF(theta[,i],alpha,gamma,a)}
     theta_hat <- colMeans(theta)
     
-    k <- 1
+    k <- 0
     delta <- 10000
     loss <- NULL
     if(verbose) cat(date(), 'Optimizing cell type specific expression profile... \n')
@@ -166,7 +187,7 @@ ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=N
 	
 	writeLines(paste("Using ",solver," solver...",sep=""))
     repeat{
-        if(abs(delta)<epsilon||k>max.iter){
+        if(abs(delta)<epsilon||k>=max.iter){
             break;
         }else{
             ###################################
@@ -286,7 +307,11 @@ ENIGMA_trace_norm <- function(object, theta, R, alpha=0.5,beta=1,tao_k=1,gamma=N
 	if(Norm.method == "PC"){
 		for(k in 1:dim(X_k_m)[3]){
 			exp <- X_k_m[,,k]
-			exp.scale <- t(apply(exp,1,scale))
+			scale_x <- function(x){
+		    if(var(x)==0){x <- x - mean(x)}else{x <- scale(x)}
+		    x
+		    }
+			exp.scale <- t(apply(exp,1,scale_x))
 			###chose the PC with the highest correlation with cell type fractions
 			d <- sqrt(svd(exp.scale)$d)
 			d <- d / sum(d)

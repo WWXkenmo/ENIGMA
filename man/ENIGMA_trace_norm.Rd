@@ -23,7 +23,7 @@ ENIGMA_trace_norm(
   loss_his = TRUE,
   model_tracker = FALSE,
   model_name = NULL,
-  random = FALSE
+  X_int = FALSE
 )
 }
 \arguments{
@@ -71,13 +71,13 @@ Default: 0.0001}
 
 \item{model_name}{name of the model}
 
-\item{random}{random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE}
+\item{X_int}{initialization for CSE profiles, an array object with three dimensions (the number of genes * the number of samples * the number of cell types), if user input a matrix (the number of genes * the number of samples), each cell type would be assigned the same start matrix.}
 }
 \value{
 ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 }
 \description{
-ENIGMA trace norm version
+trace norm version is the alternative version of ENIGMA, which is the regularized weighted matrix completion to constraint the trace norm of inferred cell type-specific gene expression matrix.
 }
 \examples{
 \dontrun{

@@ -11,7 +11,7 @@ ENIGMA_L2_max_norm(
   beta = 0.1,
   epsilon = 0.001,
   max.iter = 1000,
-  verbose = TRUE,
+  verbose = FALSE,
   pos = TRUE,
   Normalize = TRUE,
   Norm.method = "frac",
@@ -19,7 +19,7 @@ ENIGMA_L2_max_norm(
   loss_his = TRUE,
   model_tracker = FALSE,
   model_name = NULL,
-  random = FALSE
+  X_int = NULL
 )
 }
 \arguments{
@@ -51,7 +51,7 @@ ENIGMA_L2_max_norm(
 
 \item{model_name}{name of the model}
 
-\item{random}{random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE}
+\item{X_int}{initialization for CSE profiles, an array object with three dimensions (the number of genes * the number of samples * the number of cell types), if user input a matrix (the number of genes * the number of samples), each cell type would be assigned the same start matrix.}
 }
 \value{
 ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.

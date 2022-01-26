@@ -42,8 +42,8 @@
 #' @param model_name
 #' name of the model
 #'
-#' @param random
-#' random initialization of ENIGMA, if random = TRUE, then each CSE would be initialized as Bulk+N(0,I). Default: FALSE
+#' @param X_int
+#' initialization for CSE profiles, an array object with three dimensions (the number of genes * the number of samples * the number of cell types), if user input a matrix (the number of genes * the number of samples), each cell type would be assigned the same start matrix.
 #'
 #' @return ENIGMA object where object@result_CSE contains the inferred CSE profile, object@result_CSE_normalized would contains normalized CSE profile if Normalize = TRUE, object@loss_his would contains the loss values of object functions during model training. If model_tracker = TRUE, then above results would be saved in the object@model.
 #'
@@ -57,7 +57,7 @@
 #'
 #'
 #' @export
-ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, verbose=TRUE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,random = FALSE){
+ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -99,14 +99,35 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
                                    colnames(X),
                                    colnames(theta))
     )
-    for(i in 1:ncol(theta)){
-       if(!random){P_old[,,i] <- X}else{nse = rnorm((dim(X)[1]*dim(X)[2])); nse[nse<0] <- 0; P_old[,,i] <- X + matrix(nse,nrow(X),ncol(X))}
+    X_int_m = array(0,
+              dim = c( nrow(X),
+                       ncol(X),
+                       ncol(theta)),
+              dimnames = list( rownames(X),
+                               colnames(X),
+                               colnames(theta))
+    )
+    if(is.null(X_int) == FALSE){
+       if(length(dim(X_int)) == 2){
+           for(i in 1:ncol(theta)){
+           X_int_m[,,i] = X_int
+           }
+        }
+       if(length(dim(X_int)) == 3){
+          for(i in 1:ncol(theta)){
+           X_int_m[,,i] = X_int[,,i]
+          }
+        }
     }
+    for(i in 1:ncol(theta)){
+        if(is.null(X_int)){P_old[,,i] <- X}else{P_old[,,i] <- X_int_m[,,i]}
+    }
+    rm(X_int, X_int_m);gc()
     ###update iteractively
     P_old_new <- P_old
 
-    if(verbose) cat(date(), 'Optimizing cell type specific expression profile... \n')
-            iter.exp <- 1
+    cat(date(), 'Optimizing cell type specific expression profile... \n')
+            iter.exp <- 0
 			loss <- NULL
             repeat{
                 ratio <- NULL
@@ -187,6 +208,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
 	  object@model[[model_name]]$result_CSE_normalized = res2sce(X_k_norm)
 	}
 	}
+	writeLines( paste("Converge in ",iter.exp," steps",sep="") )
 	# return cell type specific gene expression profile
     if(preprocess == "sqrt") object@result_CSE = res2sce(P_old^2)
 	if(preprocess == "log") object@result_CSE = res2sce(2^P_old - 1)
@@ -212,11 +234,21 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
 	   rownames(m) = paste0("model",1:nrow(m))
 	   object@model_name = m
 	   }else{
+	   object@model_name = subset(object@model_name,`Model Name` %in% model_name == FALSE)
+	   
+	   if(nrow(object@model_name)==0){
+	   m = t(as.matrix(c(model_name, "maximum L2 norm model")))
+	   m = as.data.frame(m)
+	   colnames(m) = c("Model Name","Model Type")
+	   rownames(m) = paste0("model",1:nrow(m))
+	   object@model_name = m
+	   }else{
 	   m = rbind(as.matrix(object@model_name),t(as.matrix(c(model_name, "maximum L2 norm model"))))
 	   m = as.data.frame(m)
 	   colnames(m) = c("Model Name","Model Type")
 	   rownames(m) = paste0("model",1:nrow(m))
 	   object@model_name = m
+	   }
 	   }
 	}
 	if(verbose) cat(date(),'Done... \n')
@@ -241,9 +273,8 @@ sub_loss <- function(X, P_old, theta, alpha,beta,R){
 
     part2 <- 0
     for(i in 1:ncol(R)){
-        ref <- matrix(rep(R[,i],ncol(X)),nrow=length(R[,i]))
         # part2 <- part2 + alpha*norm((P_old[,,i]-ref),"F")^2
-        part2 <- part2 + alpha*sum( (P_old[,,i]-ref)^2 )
+        part2 <- part2 + sum( (rowMeans(P_old[,,i])-R[,i])^2 )
     }
 
     part3 <- 0
@@ -255,9 +286,9 @@ sub_loss <- function(X, P_old, theta, alpha,beta,R){
     res <- list()
     val <- part1+part2+beta*part3
     res$val <- val
-    res$part1 <- part1
-    res$part2 <- part2/alpha
-    res$part3 <- part3
+    res$part1 <- part1*(alpha/2)
+    res$part2 <- part2*((1-alpha)/2)
+    res$part3 <- part3*(beta/2)
     res
 }
 
