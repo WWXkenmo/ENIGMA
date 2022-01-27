@@ -64,7 +64,7 @@ Fundamental hypotheses of the two models of ENIGMA
 
 
 ## Tutorial Dataset
-the datasets could be downloaded from this repository. ([The link to datasets](https://github.com/WWXkenmo/ENIGMA/tree/master))
+the datasets could be downloaded from this repository. ([The link to datasets](https://doi.org/10.5281/zenodo.5906932))
 
 ## Contact Author
 Author: Weixu Wang, Xiaolan Zhou, Dr. Jun Yao, Prof. Ting Ni
