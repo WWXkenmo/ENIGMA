@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5906932.svg)](https://doi.org/10.5281/zenodo.5906932)
 
 
-![ENIGMA](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig1.png)
+<img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig1.png" alt="ENIGMA" width="600" />
 
 ## ENIGMA
 ENIGMA has three main steps. First, ENIGMA requires cell type reference expression matrix (signature matrix), which could be derived from either FACS RNA-seq or scRNA-seq datasets through calculating the average expression value of each gene from each cell type. Previous researches have widely used reference matrix curated from different platforms, for instance, Newman et al. used LM22 immune signature matrix which
