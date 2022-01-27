@@ -35,13 +35,17 @@ Both scripts could be downloaded through following links:
 * [Part-2](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
 
 ## Code for supplementary note
-* [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(mutilPaltforms).R)
+#### 1. [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(mutilPaltforms).R) (Supplementary Figure N8)
 
-* [Attaching noise to reference profile to explain the role of parameter alpha through CTS-DE analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ADMM_noise.R)
+#### 2. [Attaching noise to reference profile to explain the role of parameter alpha through CTS-DE analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ADMM_noise.R) (Supplementary Figure N7)
 
-* [Remove the spurious correlations betweeen inferred CSE profiles and cell type fractions](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Normalize_celltype_fractions.R)
+#### 3. [Remove the spurious correlations betweeen inferred CSE profiles and cell type fractions](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Normalize_celltype_fractions.R) (Supplementary Figure N9,N10,N11)
 
-* [Post-hoc nonnegative constraint](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NegativeValueEffects.R)
+#### 4. [Post-hoc nonnegative constraint](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NegativeValueEffects.R) (Supplementary Figure N2, N13, N14)
 
-* [Gradient Renormalization improve the performance of maximum L2 norm model](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Renomarlization_solver_compare_new.R)
+#### 5. [Using gradient renormalized maximum L2 norm model improve the performance](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Renomarlization_solver_compare_new.R) (Supplementary Figure N3,N4,N15)
   Note: we also write a [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Why-fixed-renormalized-gradient-norm-size-%3D-200.pdf) to introduce why we use 200 as the new gradient norm size of renormalized gradient.
+#####  DataSets: 
+1. [Datasets for DEG analysis](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/DEG_example_data)
+2. [Datasets for cell state identification](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/CellStateIdentification)
+3. [Datasets for sample/gene-level correlation analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Data/CSE_correlation)
