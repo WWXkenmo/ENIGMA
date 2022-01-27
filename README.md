@@ -6,22 +6,7 @@
 <img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig1.png" alt="ENIGMA" width="600" />
 
 ## ENIGMA
-ENIGMA has three main steps. First, ENIGMA requires cell type reference expression matrix (signature matrix), which could be derived from either FACS RNA-seq or scRNA-seq datasets through calculating the average expression value of each gene from each cell type. Previous researches have widely used reference matrix curated from different platforms, for instance, Newman et al. used LM22 immune signature matrix which
-derived from microarray platform to deconvolute bulk RNA-seq dataset. However, we
-have to note that use references from different platforms would introduce unwanted batch
-effect between reference and bulk RNA-seq matrix, especially for the reference matrix
-derived from low coverage scRNA-seq dataset. To overcome this challenge, we used
-previously presented method that is specifically designed for correcting batch effect among
-bulk RNA-seq matrix and reference matrix. Second, ENIGMA applied robust
-linear regression model to estimate each cell type fractions among samples based on
-reference matrix derived from the first step. Third, based on reference matrix and cell type
-fraction matrix estimated from step 1 and step 2, ENIGMA applied constrained matrix
-completion algorithm to deconvolute bulk RNA-seq matrix into CSE on sample-level. In
-order to constraint the model complexity to prevent overfitting, we proposed to use two
-different norm penalty functions to regularize resulted CSE. Finally, the returned CSE could
-be used to identify cell type-specific DEG, visualize each gene’s expression pattern on the
-cell type-specific manifold space (e.g. t-SNE, UMAP), and build the cell type-specific
-co-expression network to identify modules that relevant to phenotypes of interest
+A method that accurately deconvolute bulk tissue RNA-seq into single cell-type resolution given the knowledge gained from scRNA-seq. ENIGMA applies a matrix completion strategy to minimize the distance between mixture transcriptome and weighted combination of cell-type-specific expression, allowing quantification of cell-type proportions and reconstruction of cell-type-specific transcriptome.
 
 ## Notes for installation
 our newest version of ENIGMA could be downloaded through following step!
@@ -62,6 +47,8 @@ Fundamental hypotheses of the two models of ENIGMA
 
 **Hidden variable hypothesis (maximum l_2 norm model)** : Most of cell type deconvolution algorithms, including ours, are reference-based deconvolution. Using reference-based methods could provide a robust and cost-effective in-silico way to understand the heterogeneity of bulk samples. It also assumes the existence of prior knowledge on the types of cells existing in a sample. These methods may fail to perform accurately when the data includes rare or otherwise unknown cell types with no references incorporated in the algorithm. Therefore, our reconstituted bulk expression profile (Xθ^T) may not include the variation from unknown rare cell types. Ideally, the observed matrix O would be more informative in our reconstituted bulk expression profile (Xθ^T). In other word, the observed bulk expression matrix would have higher rank than Xθ^T. Under this hypothesis, we need to reduce the rank of Xθ^T. We have proved mathematically that controlling the trace norm of reconstituted bulk expression profile (Xθ^T) equals to the maximum L2 norm (X) of CSE profile (see loss design section of Supplementary Notes).
 
+**Which model users should use and why?**
+In summary, both trace norm and maximum L2 norm models show superior performance at different aspects. First, trace norm model poses trace norm regularizer to inferred CSE profiles, and uses low-rank matrix to approximate cell type-specific gene expression, which may help the model to discover better gene variation across samples. Trace norm could also perform better than maximum L2 norm on CTS-DEG identification. Second, maximum L2 norm has assumed that there exist unknown variables (expression of rare cell types or technique variations) in bulk samples, and maximum L2 norm shows better performance on recovering cell type-specific correlation structure even there exists very strong noise in observed bulk expression matrix. So, choosing which model is dependent on what kind of analyses users want to conduct. When users want to define patients/samples subtypes according to cell type-specific gene expression profile (e.g. malignant cell), users could choose the maximum L2 norm model to perform the deconvolution. Besides, when users want to perform cell type-specific analysis of differentially expressed genes, users could choose the trace norm model to perform the deconvolution. Maximum L2 norm is also preferable if users have a large cohort of bulk samples. Finally, the training of maximum L2 norm model is not involved with any inverse matrix calculation or singular value decomposition, so it is very scalable to the large bulk samples. When users want to perform fast deconvolution on the bulk expression dataset with large sample sizes, we suggest to use maximum L2 norm model.
 
 ## Tutorial Dataset
 the datasets could be downloaded from this repository. ([The link to datasets](https://doi.org/10.5281/zenodo.5906932))
