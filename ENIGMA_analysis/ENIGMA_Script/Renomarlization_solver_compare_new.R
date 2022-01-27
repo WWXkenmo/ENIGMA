@@ -239,8 +239,14 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
     return(dP)
 }
 #########################################
+source("/path/to/data/ENIGMA.R")
+source("/path/to/data/DEG_analysis_uile_function.R")
+library(Seurat)
+library(SingleCellExperiment)
+library(scater)
+			   
 ###load DEG example data
-load("/path/to/DEG_example_data/DEG_example_data.Rdata")
+load("/path/to/DEG_example_data/DEG_test_data_4.8")
 Frac <- get_proportion(Bulk, Reference)
 y <- gl(2, 100/2)
 			   
@@ -301,87 +307,90 @@ ENIGMA_l2max <- cell_deconvolve(X=as.matrix(Bulk),
                                     alpha=0.1,
                                     beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_l2max_miu5 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_beta5 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
                                     beta=5,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_l2max_miu1 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_beta1 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
                                     beta=1,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)	
 
-ENIGMA_l2max_miu10 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_beta10 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
                                     beta=10,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_l2max_miu0 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_beta0 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
                                     epsilon = 0.001,
                                     alpha=0.1,
                                     beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_admm_l2max_miu1 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
+ENIGMA_admm_l2max_beta1 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
                                                                    alpha=0.1,beta=1,gamma=1,
-                                                                   verbose=TRUE,max.iter = 1000)
-ENIGMA_admm_l2max_miu5 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
+                                                                   verbose=FALSE,max.iter = 1000)
+ENIGMA_admm_l2max_beta5 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
                                                                    alpha=0.1,beta=5,gamma=1,
-                                                                   verbose=TRUE,max.iter = 1000)
-ENIGMA_admm_l2max_miu10 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
+                                                                   verbose=FALSE,max.iter = 1000)
+ENIGMA_admm_l2max_beta10 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=1,gamma=1,
-                                                                   verbose=TRUE,max.iter = 1000)
-ENIGMA_admm_l2max_miu50 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
+                                                                   alpha=0.1,beta=10,gamma=1,
+                                                                   verbose=FALSE,max.iter = 1000)
+ENIGMA_admm_l2max_beta50 <- cell_deconvolve_admm_L2max(O = as.matrix(Bulk),
                                                                    theta=Frac$theta,
                                                                    R=Reference,
                                                                    epsilon=0.001,
-                                                                   alpha=0.1,beta=5,gamma=1,
-                                                                   verbose=TRUE,max.iter = 1000)																   
-LossList <- list(`Proximal Point(step size = 1, miu=50)` = ENIGMA_l2max$loss_history,
-                 `Proximal Point(step size = 1, Gradient Renormalization,miu=50)` = ENIGMA_l2max_reG$loss_history,
-				 `Proximal Point(step size = 1, miu=10)` = ENIGMA_l2max_miu10$loss_history,
-				 `Proximal Point(step size = 1, miu=1)` = ENIGMA_l2max_miu1$loss_history,
-				 `Proximal Point(step size = 1, miu=5)` = ENIGMA_l2max_miu5$loss_history)
-plotMultiLossCurve(LossList,name_prefix = "Method",shape=TRUE,rlgType = "L2_max_norm")
-png("/mnt/data1/weixu/HiDe/revised/Model_Compare/LossCurve/Renormalization_L2maxNorm.png",res=300,height=1500,width=3800)
+                                                                   alpha=0.1,beta=50,gamma=1,
+                                                                   verbose=FALSE,max.iter = 1000)																   
+LossList <- list(`Proximal Point(step size = 1, beta=50)` = ENIGMA_l2max$loss_history,
+                 `Proximal Point(step size = 1, Gradient Renormalization,beta=50)` = ENIGMA_l2max_reG$loss_history,
+				 `Proximal Point(step size = 1, beta=10)` = ENIGMA_l2max_beta10$loss_history,
+				 `Proximal Point(step size = 1, beta=1)` = ENIGMA_l2max_beta1$loss_history,
+				 `Proximal Point(step size = 1, beta=5)` = ENIGMA_l2max_beta5$loss_history)
+
+png("Renormalization_L2maxNorm.png",res=300,height=1500,width=3800)
 plotMultiLossCurve(LossList,name_prefix = "Method",shape=TRUE,rlgType = "L2_max_norm")
 dev.off()	
 
 
 
-LossList <- list(`ADMM(step size = 1, miu=50)` = ENIGMA_admm_l2max_miu50$loss_history,
-				 `ADMM(step size = 1, miu=10)` = ENIGMA_admm_l2max_miu10$loss_history,
-				 `ADMM(step size = 1, miu=1)` = ENIGMA_admm_l2max_miu1$loss_history,
-				 `ADMM(step size = 1, miu=5)` = ENIGMA_admm_l2max_miu5$loss_history)
-plotMultiLossCurve(LossList,name_prefix = "Method",shape=TRUE,rlgType = "L2_max_norm")
+LossList <- list(`ADMM(step size = 1, beta=50)` = ENIGMA_admm_l2max_beta50$loss_history,
+				 `ADMM(step size = 1, beta=10)` = ENIGMA_admm_l2max_beta10$loss_history,
+				 `ADMM(step size = 1, beta=1)` = ENIGMA_admm_l2max_beta1$loss_history,
+				 `ADMM(step size = 1, beta=5)` = ENIGMA_admm_l2max_beta5$loss_history)
 png("ADMM_L2maxNorm.png",res=300,height=1500,width=3800)
 plotMultiLossCurve(LossList,name_prefix = "Method",shape=TRUE,rlgType = "L2_max_norm")
-dev.off()	
+dev.off()
+			   
 ############################################
-res0 <- DEG_test1(ENIGMA_l2max_miu0$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res1 <- DEG_test1(ENIGMA_l2max_miu1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res2 <- DEG_test1(ENIGMA_l2max_miu5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res3 <- DEG_test1(ENIGMA_l2max_miu10$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res0 <- DEG_test1(ENIGMA_l2max_beta0$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res1 <- DEG_test1(ENIGMA_l2max_beta1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res2 <- DEG_test1(ENIGMA_l2max_beta5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res3 <- DEG_test1(ENIGMA_l2max_beta10$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 res4 <- DEG_test1(ENIGMA_l2max$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 res5 <- DEG_test1(ENIGMA_l2max_reG$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 
 #################################################
+library(ggplot2)
+library(ggpubr)
+
 df <- data.frame(AUPRC = c(res0,res1,res2,res3,res4,res5),Method = c("Proximal Point(step size = 1, beta=0)","Proximal Point(step size = 1, beta=1)","Proximal Point(step size = 1, beta=5)","Proximal Point(step size = 1, beta=10)","Proximal Point(step size = 1, beta=50)","Proximal Point(step size = 1, Gradient Renormalization, beta=50)"))
 df$Method <- factor(df$Method,level = c("Proximal Point(step size = 1, beta=0)","Proximal Point(step size = 1, beta=1)","Proximal Point(step size = 1, beta=5)","Proximal Point(step size = 1, beta=10)","Proximal Point(step size = 1, beta=50)","Proximal Point(step size = 1, Gradient Renormalization, beta=50)"))
 p1<-ggplot(df, aes(x=Method, y=AUPRC, fill=Method)) +
@@ -389,7 +398,7 @@ p1<-ggplot(df, aes(x=Method, y=AUPRC, fill=Method)) +
 
 
 ###running steps
-df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max_miu0$loss_history),nrow(ENIGMA_l2max_miu1$loss_history),nrow(ENIGMA_l2max_miu5$loss_history),nrow(ENIGMA_l2max_miu10$loss_history),nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_l2max_reG$loss_history)),Method = c("Proximal Point(step size = 1, beta=0)","Proximal Point(step size = 1, beta=1)","Proximal Point(step size = 1, beta=5)","Proximal Point(step size = 1, beta=10)","Proximal Point(step size = 1, beta=50)","Proximal Point(step size = 1, Gradient Renormalization, beta=50)"))
+df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max_beta0$loss_history),nrow(ENIGMA_l2max_beta1$loss_history),nrow(ENIGMA_l2max_beta5$loss_history),nrow(ENIGMA_l2max_beta10$loss_history),nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_l2max_reG$loss_history)),Method = c("Proximal Point(step size = 1, beta=0)","Proximal Point(step size = 1, beta=1)","Proximal Point(step size = 1, beta=5)","Proximal Point(step size = 1, beta=10)","Proximal Point(step size = 1, beta=50)","Proximal Point(step size = 1, Gradient Renormalization, beta=50)"))
 df$Method <- factor(df$Method,level = c("Proximal Point(step size = 1, beta=0)","Proximal Point(step size = 1, beta=1)","Proximal Point(step size = 1, beta=5)","Proximal Point(step size = 1, beta=10)","Proximal Point(step size = 1, beta=50)","Proximal Point(step size = 1, Gradient Renormalization, beta=50)"))
 p2<-ggplot(df, aes(x=Method, y=`Number.of.Iterations`, fill=Method)) +
     geom_bar(stat="identity")+theme_classic2()+theme(text = element_text(size=16),axis.text.x=element_blank ())+labs(x="",y="Number of Iterations")+NoLegend()
@@ -400,22 +409,22 @@ dev.off()
 #Compare ADMM and proximal point learning performance
 p <- 100
 y <- gl(2, p/2)
-res1_admm <- DEG_test1(ENIGMA_admm_l2max_miu1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res2_admm <- DEG_test1(ENIGMA_admm_l2max_miu5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res3_admm <- DEG_test1(ENIGMA_admm_l2max_miu10$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
-res4_admm <- DEG_test1(ENIGMA_admm_l2max_miu50$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res1_admm <- DEG_test1(ENIGMA_admm_l2max_beta1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res2_admm <- DEG_test1(ENIGMA_admm_l2max_beta5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res3_admm <- DEG_test1(ENIGMA_admm_l2max_beta10$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res4_admm <- DEG_test1(ENIGMA_admm_l2max_beta50$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 
 df <- data.frame(AUPRC = c(res1,res2,res3,res4,res1_admm,res2_admm,res3_admm,res4_admm,res5),Method = c(rep(c("Proximal Point"),4),rep(c("ADMM"),4),"Proximal Point(Gradient Renormalization)"),beta = c(rep(c(1,5,10,50),2),50))
 df$beta <- as.factor(as.character(df$beta))
 df$beta <- factor(df$beta,levels=c("1","5","10","50"))
-png("/mnt/data1/weixu/HiDe/revised/Model_Compare/ADMM_pps/Barplot(L2maxNorm).png",res=300,height=1500,width=3000)
+png("Barplot(L2maxNorm_auprc).png",res=300,height=1500,width=3000)
 pp1<-ggplot(df, aes(x=beta, y=AUPRC, fill=Method)) +
     geom_bar(stat="identity",position=position_dodge())+theme_classic2()+theme(text = element_text(size=16),axis.text.x=element_blank ())+labs(x="")
 pp1
 dev.off()
 
 ###running steps
-df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max_miu1$loss_history),nrow(ENIGMA_l2max_miu5$loss_history),nrow(ENIGMA_l2max_miu10$loss_history),nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_admm_l2max_miu1$loss_history),nrow(ENIGMA_admm_l2max_miu5$loss_history),nrow(ENIGMA_admm_l2max_miu10$loss_history),nrow(ENIGMA_admm_l2max_miu50$loss_history),nrow(ENIGMA_l2max_reG$loss_history)),Method = c(rep(c("Proximal Point"),4),rep(c("ADMM"),4),"Proximal Point(Gradient Renormalization)"),beta = c(rep(c(1,5,10,50),2),50))
+df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max_beta1$loss_history),nrow(ENIGMA_l2max_beta5$loss_history),nrow(ENIGMA_l2max_beta10$loss_history),nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_admm_l2max_beta1$loss_history),nrow(ENIGMA_admm_l2max_beta5$loss_history),nrow(ENIGMA_admm_l2max_beta10$loss_history),nrow(ENIGMA_admm_l2max_beta50$loss_history),nrow(ENIGMA_l2max_reG$loss_history)),Method = c(rep(c("Proximal Point"),4),rep(c("ADMM"),4),"Proximal Point(Gradient Renormalization)"),beta = c(rep(c(1,5,10,50),2),50))
 df$beta <- as.factor(as.character(df$beta))
 df$beta <- factor(df$beta,levels=c("1","5","10","50"))
 pp2<-ggplot(df, aes(x=beta, y=`Number.of.Iterations`, fill=Method)) +
@@ -427,45 +436,41 @@ pp2
 dev.off()
 ####################################################################################################
 ##prove L2-norm is working
-model1 <- ENIGMA_l2max_miu0
+model1 <- ENIGMA_l2max_beta0
 
 model2 <- cell_deconvolve(X=as.matrix(Bulk),
-                                theta=Frac$theta,
-                                R=Reference,
-                                inner_epilson=0.001,
-                                outer_epilson=0.001,
-                                alpha=0.3,
-                                miu=0,tao_k=1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    theta=Frac$theta,
+                                    R=Reference,
+                                    epsilon = 0.001,
+                                    alpha=0.3,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 model3 <- cell_deconvolve(X=as.matrix(Bulk),
-                                theta=Frac$theta,
-                                R=Reference,
-                                inner_epilson=0.001,
-                                outer_epilson=0.001,
-                                alpha=0.5,
-                                miu=0,tao_k=1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    theta=Frac$theta,
+                                    R=Reference,
+                                    epsilon = 0.001,
+                                    alpha=0.5,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 model4 <- cell_deconvolve(X=as.matrix(Bulk),
-                                theta=Frac$theta,
-                                R=Reference,
-                                inner_epilson=0.001,
-                                outer_epilson=0.001,
-                                alpha=0.7,
-                                miu=0,tao_k=1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    theta=Frac$theta,
+                                    R=Reference,
+                                    epsilon = 0.001,
+                                    alpha=0.7,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 model5 <- cell_deconvolve(X=as.matrix(Bulk),
-                                theta=Frac$theta,
-                                R=Reference,
-                                inner_epilson=0.001,
-                                outer_epilson=0.001,
-                                alpha=0.9,
-                                miu=0,tao_k=1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    theta=Frac$theta,
+                                    R=Reference,
+                                    epsilon = 0.001,
+                                    alpha=0.9,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 								
-res1 <- DEG_test1(model1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res2 <- DEG_test1(model2$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res3 <- DEG_test1(model3$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res4 <- DEG_test1(model4$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res5 <- DEG_test1(model5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
+res1 <- DEG_test1(model1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res2 <- DEG_test1(model2$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res3 <- DEG_test1(model3$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res4 <- DEG_test1(model4$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res5 <- DEG_test1(model5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 ########################################################################
 ##
 derive_P2 <- function(X, theta, P_old,R,alpha){
@@ -514,48 +519,43 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
 ENIGMA_l2max_reG1 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.1,
-                                    miu=50,tao_k=1,max.iter=1,max.iter.exp=150,verbose=TRUE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_l2max_reG2 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_reG2 <-cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.3,
-                                    miu=50,tao_k=1,max.iter=1,max.iter.exp=150,verbose=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 ENIGMA_l2max_reG3 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.5,
-                                    miu=50,tao_k=1,max.iter=1,max.iter.exp=150,verbose=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
 ENIGMA_l2max_reG4 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.7,
-                                    miu=50,tao_k=1,max.iter=1,max.iter.exp=150,verbose=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-ENIGMA_l2max_reG6 <- cell_deconvolve(X=as.matrix(Bulk),
+ENIGMA_l2max_reG5 <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.9,
-                                    miu=50,tao_k=0.1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 
-res1_reG <- DEG_test1(ENIGMA_l2max_reG1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res2_reG <- DEG_test1(ENIGMA_l2max_reG2$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res3_reG <- DEG_test1(ENIGMA_l2max_reG3$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res4_reG <- DEG_test1(ENIGMA_l2max_reG4$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
-res5_reG <- DEG_test1(ENIGMA_l2max_reG5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
+res1_reG <- DEG_test1(ENIGMA_l2max_reG1$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res2_reG <- DEG_test1(ENIGMA_l2max_reG2$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res3_reG <- DEG_test1(ENIGMA_l2max_reG3$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res4_reG <- DEG_test1(ENIGMA_l2max_reG4$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
+res5_reG <- DEG_test1(ENIGMA_l2max_reG5$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=TRUE)
 ########
 perform_Rlg <- c(res1_reG,res2_reG,res3_reG,res4_reG,res5_reG)
 perform_woRlg <- c(res1,res2,res3,res4,res5)
@@ -582,10 +582,9 @@ Frac <- get_proportion(Bulk, Reference)
 ENIGMA_l2max_reG <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.1,
-                                    miu=50,tao_k=1,max.iter=1,max.iter.exp=150,verbose=FALSE)
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 									
 reG <- DEG_test1(ENIGMA_l2max_reG$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
 line <- c(line,reG)
@@ -647,14 +646,13 @@ Bulk <- testMatrixG[[k]]
 Reference <- t(testMatrixH1[[k]])
 DEG_list <- DEG_list_all[[k]]
 Frac <- get_proportion(Bulk, Reference)
-
+	
 ENIGMA_l2max_reG <- cell_deconvolve(X=as.matrix(Bulk),
                                     theta=Frac$theta,
                                     R=Reference,
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
+                                    epsilon = 0.001,
                                     alpha=0.1,
-                                    miu=0,tao_k=1,max.iter=1,max.iter.exp=1000,verbose=FALSE)
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=FALSE,Normalize=FALSE)
 									
 reG <- DEG_test1(ENIGMA_l2max_reG$X_k,y,Frac$theta,method = "enigma",10000,DEG_list,qval=FALSE)
 line <- c(line,reG)
@@ -680,7 +678,7 @@ p_boxplot <- sp.m %>%
     theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
     theme(legend.title = element_text(size = 12, color = "black", family = "Arial"), legend.text = element_text(size = 12, color = "black", family = "Arial")) + 
     theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))
-png("/Path/to/save/Data/boxplot_DEG.png",res=300,height=1200,width=2400)
+png("boxplot_DEG.png",res=300,height=1200,width=2400)
 p_boxplot
 dev.off()
 
@@ -720,8 +718,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e2
-    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e2
+    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -738,27 +736,12 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
 ENIGMA_l2max <- cell_deconvolve(X=as.matrix(sqrt(Bulk)),
                                     theta=Frac$theta,
                                     R=sqrt(Reference),
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
-                                    alpha=0.5,
-                                    miu=5,tao_k=10,max.iter=1,max.iter.exp=1000,verbose=TRUE)
+                                    epsilon = 0.001,
+                                    alpha=0.1,
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pre.process = "sqrt")
 
-X_k <- X_k_norm <- ENIGMA_l2max$X_k
-for(k in 1:dim(X_k)[3]){
-	X_k[,,k][X_k[,,k]<0] <- 0
-	exp <- X_k[,,k]^2
-	
-	exp.scale <- t(apply(exp,1,scale))
-	PC <- svd(exp.scale)$v[,1]
-	exp.norm <- NULL
-	for(i in 1:nrow(exp)){
-		lm.model <- lm(exp[i,]~PC)
-		exp.norm <- rbind(exp.norm, (exp[i,] - lm.model$coefficients[2] * PC))
-	}
-	X_k_norm[,,k] <- exp.norm
-}
         
-sce <- SingleCellExperiment(assays = list(logcounts = X_k_norm[,,1]))
+sce <- SingleCellExperiment(assays = list(logcounts = ENIGMA_l2max$X_k_norm[,,1]))
 sce$cell_type <- cellLabel$c1
 sce <- sce[,Frac$theta[,1]>0.05]
 sce <- runPCA(sce)
@@ -773,7 +756,7 @@ ARI_ct1 <- c(ARI_ct1,ARI)
 }
 
 
-sce2 <- SingleCellExperiment(assays = list(logcounts = X_k_norm[,,3]))
+sce2 <- SingleCellExperiment(assays = list(logcounts = ENIGMA_l2max$X_k_norm[,,3]))
 sce2$cell_type <- cellLabel$c3
 sce2 <- sce2[,Frac$theta[,3]>0.05]
 sce2 <- runPCA(sce2)
@@ -822,8 +805,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e2
-    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e2
+    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -837,34 +820,18 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
     dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
     return(dP)
 }
-ENIGMA_l2max_miu0 <- cell_deconvolve(X=as.matrix(sqrt(Bulk)),
+ENIGMA_l2max_beta0 <-cell_deconvolve(X=as.matrix(sqrt(Bulk)),
                                     theta=Frac$theta,
                                     R=sqrt(Reference),
-                                    inner_epilson=0.001,
-                                    outer_epilson=0.001,
-                                    alpha=0.5,
-                                    miu=0,tao_k=0.01,max.iter=1,max.iter.exp=200,verbose=TRUE)
+                                    epsilon = 0.001,
+                                    alpha=0.1,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pre.process = "sqrt")
 									
-X_k <- X_k_norm <- ENIGMA_l2max_miu0$X_k
-for(k in 1:dim(X_k)[3]){
-	X_k[,,k][X_k[,,k]<0] <- 0
-	exp <- X_k[,,k]^2
-	
-	exp.scale <- t(apply(exp,1,scale))
-	PC <- svd(exp.scale)$v[,1]
-	exp.norm <- NULL
-	for(i in 1:nrow(exp)){
-		lm.model <- lm(exp[i,]~PC)
-		exp.norm <- rbind(exp.norm, (exp[i,] - lm.model$coefficients[2] * PC))
-	}
-	X_k_norm[,,k] <- exp.norm
-}
-        
-sce <- SingleCellExperiment(assays = list(logcounts = X_k_norm[,,1]))
+sce <- SingleCellExperiment(assays = list(logcounts = ENIGMA_l2max_beta0$X_k_norm[,,1]))
 sce$cell_type <- cellLabel$c1
 sce <- sce[,Frac$theta[,1]>0.05]
 sce <- runPCA(sce)
-sce <- runTSNE(sce,dimred="PCA",n_dimred=5)
+sce <- runTSNE(sce,dimred="PCA",n_dimred=6)
 label <- sce$cell_type
 ARI_ct1 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
@@ -875,11 +842,11 @@ ARI_ct1 <- c(ARI_ct1,ARI)
 }
 
 
-sce2 <- SingleCellExperiment(assays = list(logcounts = X_k_norm[,,3]))
+sce2 <- SingleCellExperiment(assays = list(logcounts = ENIGMA_l2max_beta0$X_k_norm[,,3]))
 sce2$cell_type <- cellLabel$c3
 sce2 <- sce2[,Frac$theta[,3]>0.05]
 sce2 <- runPCA(sce2)
-sce2 <- runTSNE(sce2,dimred="PCA",n_dimred=5)
+sce2 <- runTSNE(sce2,dimred="PCA",n_dimred=6)
 label <- sce2$cell_type
 ARI_ct2 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
@@ -902,7 +869,7 @@ res1 <- max(ARI_Rlg$ARI_ct1)
 res2 <- max(ARI_Rlg$ARI_ct2)
 res3 <- max(ARI_WithOutRlg$ARI_ct1)
 res4 <- max(ARI_WithOutRlg$ARI_ct2)
-df <- data.frame(ARI = c(res1,res2,res3,res4),Method = c("L2 MaxNorm","L2 MaxNorm","Without Regularization","Without Regularization"),CellType = c("CellType1","CellType3","CellType1","CellType3"))
+df <- data.frame(ARI = c(res1,res2,res3,res4),Method = c("Maximum L2 norm","Maximum L2 norm","Without Regularization","Without Regularization"),CellType = c("CellType1","CellType3","CellType1","CellType3"))
 p<-ggplot(df, aes(x=CellType, y=ARI, fill=Method)) +
     geom_bar(stat="identity",position=position_dodge())+theme_classic2()+theme(text = element_text(size=20))+labs(x="")
 png("BarplotARI.png",res=300,height=1800,width=2000)
@@ -910,7 +877,7 @@ p
 dev.off()
 
 
-df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_l2max_miu0$loss_history)),Method = c("L2 MaxNorm","Without Regularization"))
+df <- data.frame(`Number of Iterations` = c(nrow(ENIGMA_l2max$loss_history),nrow(ENIGMA_l2max_miu0$loss_history)),Method = c("Maximum L2 norm","Without Regularization"))
 p2<-ggplot(df, aes(x=Method, y=`Number.of.Iterations`, fill=Method)) +
     geom_bar(stat="identity")+theme_classic2()+theme(text = element_text(size=16),axis.text.x=element_blank ())+labs(x="",y="Number of Iterations")
 png("BarplotARI.png",res=300,height=1800,width=1700)
