@@ -42,7 +42,7 @@ res_alg_all <- cell_deconvolve(X=sqrt(Bulk),
 					alpha=0.3,
 					beta=0.5,tao_k=0.01,verbose=TRUE,Norm.method = "PC",pre.process = "sqrt")
 					
-enigma <- SingleCellExperiment(assays=list(logcounts = res_alg_all$X_k[,,1]^2))
+enigma <- SingleCellExperiment(assays=list(logcounts = res_alg_all$X_k[,,1]^2)) ## sqrt transformation, sqaure to convert the data into raw space
 enigma$Group <- CellLabel$c1 
 enigma <- runPCA(enigma)
 enigma <- runUMAP(enigma,dimred="PCA",n_dimred=10)
