@@ -1,5 +1,5 @@
 ### ENIGMA analysis
-To reproduce part of the simulation and analysis results in our manuscript, here we give several example code for data simulation and analysis.
+To reproduce main parts of the simulations and analysis results in our manuscript, here we give several example code for data simulation and analysis.
 tips:
 1. Before users run following example, user need to source the ENIGMA code at first
 ```
