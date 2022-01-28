@@ -210,7 +210,7 @@ pp=ggplot(performDat,aes(x=alpha,y=ARI,fill=method,colour=method))+
         panel.grid=element_blank())+
   ylab("Adjusted Rand Index")
 
-png("/mnt/data1/weixu/HiDe/revised/Why_normalize/ARI_ct2(frac).png",res=300,height = 1600,width = 2200)
+png("ARI_ct2(frac).png",res=300,height = 1600,width = 2200)
 pp
 dev.off()
 
