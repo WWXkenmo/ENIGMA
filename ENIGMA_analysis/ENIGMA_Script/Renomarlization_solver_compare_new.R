@@ -284,8 +284,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e2
-    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e2
+    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -500,8 +500,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e2
-    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e2
+    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -620,8 +620,8 @@ derive_P2 <- function(X, theta, P_old,R,alpha){
         dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
         dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
     }
-    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e2
-    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e2
+    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
     
     #calculate w1
     #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
@@ -883,3 +883,205 @@ p2<-ggplot(df, aes(x=Method, y=`Number.of.Iterations`, fill=Method)) +
 png("BarplotARI.png",res=300,height=1800,width=1700)
 p2
 dev.off()
+
+#########################################################################
+
+derive_P2 <- function(X, theta, P_old,R,alpha){
+    ## P_old: a tensor variable with three dimensions
+    ## theta: the cell type proportions variable
+    ## cell_type_index: optimize which type of cells
+    ## R: reference matrix
+    dP1 <- dP2 <- array(0,
+                        dim = c( nrow(X),
+                                 ncol(X),
+                                 ncol(theta)),
+                        dimnames = list( rownames(X),
+                                         colnames(X),
+                                         colnames(theta))
+    )
+    for(cell_type_index in 1:ncol(theta)){
+        R.m <- as.matrix(R[,cell_type_index])
+        
+        cell_type_seq <- c(1:ncol(theta))
+        cell_type_seq <- cell_type_seq[cell_type_seq!=cell_type_index]
+        
+        X_summary = Reduce("+",
+                           lapply(cell_type_seq, function(i) P_old[,,i]%*%diag(theta[,i]) )
+        )
+        X_summary <- X-X_summary
+        
+        dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
+        dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
+    }
+    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
+    
+    #calculate w1
+    #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
+    #else if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP2)) ) {w1 = 0}
+    #else {
+    #    w1 = crossprod(as.matrix(dP2-dP1), as.matrix(dP2))/sum((dP1-dP2)^2)
+    #}
+    w1 <- alpha
+    w2 <- 1-w1
+    
+    dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
+    return(dP)
+}
+
+load("HNSCC_simulate_benchmark.Rdata")
+
+Frac <- get_proportion(bulkSet_HNSCC, profile_hnscc)							
+ENIGMA_l2max_reG <- cell_deconvolve(X=as.matrix(log2(bulkSet_HNSCC+1)),
+                                    theta=Frac$theta,
+                                    R=log2(profile_hnscc+1),
+                                    epsilon = 0.001,
+                                    alpha=0.8,
+                                    beta=50,tao_k=1,max.iter=1000,verbose=FALSE,pos=TRUE,Normalize=FALSE)
+
+derive_P2 <- function(X, theta, P_old,R,alpha){
+    ## P_old: a tensor variable with three dimensions
+    ## theta: the cell type proportions variable
+    ## cell_type_index: optimize which type of cells
+    ## R: reference matrix
+    dP1 <- dP2 <- array(0,
+                        dim = c( nrow(X),
+                                 ncol(X),
+                                 ncol(theta)),
+                        dimnames = list( rownames(X),
+                                         colnames(X),
+                                         colnames(theta))
+    )
+    for(cell_type_index in 1:ncol(theta)){
+        R.m <- as.matrix(R[,cell_type_index])
+        
+        cell_type_seq <- c(1:ncol(theta))
+        cell_type_seq <- cell_type_seq[cell_type_seq!=cell_type_index]
+        
+        X_summary = Reduce("+",
+                           lapply(cell_type_seq, function(i) P_old[,,i]%*%diag(theta[,i]) )
+        )
+        X_summary <- X-X_summary
+        
+        dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
+        dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
+    }
+    #dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 2e2
+    #dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 2e2
+    
+    #calculate w1
+    #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
+    #else if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP2)) ) {w1 = 0}
+    #else {
+    #    w1 = crossprod(as.matrix(dP2-dP1), as.matrix(dP2))/sum((dP1-dP2)^2)
+    #}
+    w1 <- alpha
+    w2 <- 1-w1
+    
+    dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
+    return(dP)
+}
+
+ENIGMA_l2max_raw <- cell_deconvolve(X=as.matrix(log2(bulkSet_HNSCC+1)),
+                                    theta=Frac$theta,
+                                    R=log2(profile_hnscc+1),
+                                    epsilon = 0.001,
+                                    alpha=0.8,
+                                    beta=0,tao_k=1,max.iter=1000,verbose=FALSE,pos=TRUE,Normalize=FALSE)
+
+HiDe <- NULL
+HiDe2 <- NULL
+celltype <- NULL
+for(ct in colnames(Frac$theta)){
+CSE_pre_m1 <- ENIGMA_l2max_raw$X_k[,,ct]
+CSE_pre_m2 <- ENIGMA_l2max_reG$X_k[,,ct]
+cor_pre_m1 <- NULL
+cor_pre_m2 <- NULL
+for(i in which(Frac$theta[,ct]!=0)){
+ cor_pre_m1 <- c(cor_pre_m1, cor(log2(P_HNSCC[,i,ct]+1),CSE_pre_m1[,i],method="sp"))
+ cor_pre_m2 <- c(cor_pre_m2, cor(log2(P_HNSCC[,i,ct]+1),CSE_pre_m2[,i],method="sp"))
+}
+HiDe <- c(HiDe,cor_pre_m1)
+HiDe2 <- c(HiDe2,cor_pre_m2)
+celltype <- c(celltype,rep(ct,length(cor_pre_m1)))
+}
+
+dat <- data.frame(method=c(rep("Without Regularization",length(HiDe)),
+                           rep("Maximum L2 norm",length(HiDe2))),
+				  performance=c(HiDe,
+				                HiDe2),
+				  celltype=c(rep(celltype,2)))
+dat$method <- factor(dat$method,levels=c("Maximum L2 norm","Without Regularization"))
+png("performance_compare_spearman_HNSCC(sample).png",res=300,height=1000,width=2500)
+p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
+    geom_boxplot()+theme_minimal()+labs(y="Correlation per sample")+facet_grid(~celltype, scales = "free_x") + 
+    theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
+    theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))+ylim(c(0,1))
+p
+dev.off()
+
+
+HiDe <- NULL
+HiDe2 <- NULL
+celltype <- NULL
+for(ct in colnames(Frac$theta)){
+CSE <- P_HNSCC[rownames(profile_hnscc),,ct]
+CSE_pre_m1 <- ENIGMA_l2max_raw$X_k[,,ct]
+CSE_pre_m2 <- ENIGMA_l2max_reG$X_k[,,ct]
+cor_pre_m1 <- NULL
+cor_pre_m2 <- NULL
+for(i in rownames(profile_hnscc)){
+ cor_pre_m1 <- c(cor_pre_m1, cor(log2(CSE[i,which(Frac$theta[,ct]!=0)]+1),CSE_pre_m1[i,which(Frac$theta[,ct]!=0)],method="sp"))
+ cor_pre_m2 <- c(cor_pre_m2, cor(log2(CSE[i,which(Frac$theta[,ct]!=0)]+1),CSE_pre_m2[i,which(Frac$theta[,ct]!=0)],method="sp")) 
+}
+HiDe <- c(HiDe,cor_pre_m1)
+HiDe2 <- c(HiDe2,cor_pre_m2)
+celltype <- c(celltype,rep(ct,length(cor_pre_m1)))
+}
+
+
+dat <- data.frame(method=c(rep("Without Regularization",length(HiDe)),
+                           rep("Maximum L2 norm",length(HiDe2))),
+				  performance=c(HiDe,
+				                HiDe2),
+				  celltype=c(rep(celltype,2)))
+dat$method <- factor(dat$method,levels=c("Maximum L2 norm","Without Regularization"))
+png("performance_compare_spearman_HNSCC(gene).png",res=300,height=1000,width=2500)
+p<-ggplot(dat, aes(x=celltype, y=performance, color=method)) +
+    geom_boxplot()+theme_minimal()+labs(y="Correlation per sample")+facet_grid(~celltype, scales = "free_x") + 
+    theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + 
+    theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))+ylim(c(0,1))
+p
+dev.off()
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
+			   
