@@ -30,23 +30,20 @@ sce2array <- function(object, model_name = NULL,norm_output = TRUE){
    if(is.null(model_name)){
      Exp = counts(object@result_CSE)
 	 CellLabel = colData(object@result_CSE)$cell_type
-	 SampleLabel = colData(object@result_CSE)$sample
 	}else{
 	 Exp = counts(object@model[[model_name]]$result_CSE)
 	 CellLabel = colData(object@model[[model_name]]$result_CSE)$cell_type
-	 SampleLabel = colData(object@model[[model_name]]$result_CSE)$sample
 	}
 	}else{
 	if(is.null(model_name)){
      Exp = counts(object@result_CSE_normalized)
 	 CellLabel = colData(object@result_CSE_normalized)$cell_type
-	 SampleLabel = colData(object@result_CSE_normalized)$sample
 	}else{
 	 Exp = counts(object@model[[model_name]]$result_CSE_normalized)
 	 CellLabel = colData(object@model[[model_name]]$result_CSE_normalized)$cell_type
-	 SampleLabel = colData(object@model[[model_name]]$result_CSE_normalized)$sample
 	}
 	}
+	 SampleLabel = colnames(object@bulk)
 	 array = matrix(0,nrow = nrow(Exp), ncol= length(SampleLabel))
 	 array = array(0,
               dim = c( nrow(Exp),
