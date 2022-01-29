@@ -12,7 +12,7 @@ A method that accurately deconvolute bulk tissue RNA-seq into single cell-type r
 our newest version of ENIGMA could be downloaded through following step!
 ### 1. prepare the required packages of ENIGMA
 ```
-install.packages(c("Matrix","S4Vectors","corpcor","MASS","e1071","ggplot2","cowplot","magrittr","purrr","tibble","nnls","doParallel","tidyr","plyr"))
+install.packages(c("Matrix","S4Vectors","corpcor","MASS","e1071","ggplot2","cowplot","magrittr","purrr","tibble","nnls","doParallel","tidyr","plyr","vctrs"))
 BiocManager::install(c("SingleCellExperiment","scater","Biobase","SummarizedExperiment","sva","preprocessCore"))
 ```
 ### 2. install ENIGMA
