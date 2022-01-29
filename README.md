@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5906932.svg)](https://doi.org/10.5281/zenodo.5906932)
 
 
-<img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig1.png" alt="ENIGMA" width="600" />
+<img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig.1.png" alt="ENIGMA" width="600" />
 
 ## ENIGMA
 A method that accurately deconvolute bulk tissue RNA-seq into single cell-type resolution given the knowledge gained from scRNA-seq. ENIGMA applies a matrix completion strategy to minimize the distance between mixture transcriptome and weighted combination of cell-type-specific expression, allowing quantification of cell-type proportions and reconstruction of cell-type-specific transcriptome.
