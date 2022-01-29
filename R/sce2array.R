@@ -25,7 +25,7 @@
 #'
 #' @export
 sce2array <- function(object, model_name = NULL,norm_output = TRUE){
-   require("SingleCellExperiments")
+   require("SingleCellExperiment")
    if(!norm_output){
    if(is.null(model_name)){
      Exp = counts(object@result_CSE)
