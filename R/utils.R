@@ -12,7 +12,7 @@ res2sce <- function(res_array) {
         }, ., names(.)) %>%
         do.call(cbind, .)
 
-    sce = SingleCellExperiment(assays=list(logcounts = dat_matrix))
+    sce = SingleCellExperiment(assays=list(counts = dat_matrix))
     colData(sce) = data.frame( label=colnames(dat_matrix) ) %>%
         separate(label, into = c("sample", "cell_type"), sep = ":", remove = F) %>%
         DataFrame()
