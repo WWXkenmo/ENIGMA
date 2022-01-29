@@ -1,6 +1,5 @@
 ## DEconvolution based on Regularized Matrix Completion algorithm (ENIGMA)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5907208.svg)](https://doi.org/10.5281/zenodo.5907208)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5906932.svg)](https://doi.org/10.5281/zenodo.5906932)
 
 
 <img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig.1.png" alt="ENIGMA" width="600" />
