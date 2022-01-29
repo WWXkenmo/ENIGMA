@@ -56,6 +56,7 @@ sce2array <- function(object, model_name = NULL,norm_output = TRUE){
 	 for(ct in names(table(CellLabel))){
 	    array[,,ct] = Exp[,CellLabel %in% ct]
 	 }
+	 array = array[,,colnames(object@ref)]
 	 array
 }
    
