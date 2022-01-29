@@ -33,12 +33,10 @@ devtools::install_github("WWXKenmo/ENIGMA")
 3. Update new tutorial
 ---------------------------------------------------------
 ## Usage
-For usage examples and guided walkthroughs, check the `vignettes` directory of the repo. 
+Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package.
 
-* [Toy example for running ENIGMA](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_toy2.html)
+## Tutorial
 * [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/ENIGMA_cell_heterogeneity1.html)
-
-Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package. 
 
 ## Note
 Fundamental hypotheses of the two models of ENIGMA
