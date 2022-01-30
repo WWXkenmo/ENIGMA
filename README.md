@@ -33,7 +33,7 @@ devtools::install_github("WWXKenmo/ENIGMA")
 ---------------------------------------------------------
 ## Usage
 Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package.
-
+[link to example datasets](https://github.com/WWXkenmo/ENIGMA/tree/master)
 ## Tutorial
 * [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Identify-cell-type-specific-cell-states.html)
 
@@ -46,9 +46,6 @@ Fundamental hypotheses of the two models of ENIGMA
 
 **Which model users should use and why?**
 In summary, both trace norm and maximum L2 norm models show superior performance at different aspects. First, trace norm model poses trace norm regularizer to inferred CSE profiles, and uses low-rank matrix to approximate cell type-specific gene expression, which may help the model to discover better gene variation across samples. Trace norm could also perform better than maximum L2 norm on CTS-DEG identification. Second, maximum L2 norm has assumed that there exist unknown variables (expression of rare cell types or technique variations) in bulk samples, and maximum L2 norm shows better performance on recovering cell type-specific correlation structure even there exists very strong noise in observed bulk expression matrix. So, choosing which model is dependent on what kind of analyses users want to conduct. When users want to define patients/samples subtypes according to cell type-specific gene expression profile (e.g. malignant cell), users could choose the maximum L2 norm model to perform the deconvolution. Besides, when users want to perform cell type-specific analysis of differentially expressed genes, users could choose the trace norm model to perform the deconvolution. Maximum L2 norm is also preferable if users have a large cohort of bulk samples. Finally, the training of maximum L2 norm model is not involved with any inverse matrix calculation or singular value decomposition, so it is very scalable to the large bulk samples. When users want to perform fast deconvolution on the bulk expression dataset with large sample sizes, we suggest to use maximum L2 norm model.
-
-## Tutorial Dataset
-the datasets could be downloaded from this repository. ([The link to datasets](https://doi.org/10.5281/zenodo.5906932))
 
 ## Contact Author
 Author: Weixu Wang, Xiaolan Zhou, Dr. Jun Yao, Prof. Ting Ni
