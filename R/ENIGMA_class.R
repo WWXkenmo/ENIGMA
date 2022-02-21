@@ -81,13 +81,13 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "sort", "aggre"),
     suppressPackageStartupMessages(require("SingleCellExperiment"))
 	
     if ( !inherits(bulk, what = c("matrix", "Matrix", "dgCMatrix")) ) {
-        stop("Bulk should be a matrix. ")
+        stop("bulk should be a matrix. ")
     }
     if ( !(ref_type %in% c("single_cell", "sort","aggre")) | (length(ref_type) != 1) ) {
         stop("Invalid reference type. Please input 'single_cell','aggre' or 'sort'. ")
     }
 	
-	if(ref_type %in% c("aggre") & ncol(ref)>=ncol(Bulk)){
+	if(ref_type %in% c("aggre") & ncol(ref)>=ncol(bulk)){
 		stop("Invalid reference! more number of cell type than bulk samples! check if the ref_type == 'single_cell'? ")
 	}
     ## reference is single cell RNA-seq
@@ -143,16 +143,16 @@ create_ENIGMA <- function(bulk, ref, ref_type=c("single_cell", "sort", "aggre"),
         }
     }
 	
-    ## reference is FACS Bulk RNA-seq/microarray
+    ## reference is FACS bulk RNA-seq/microarray
 	if (ref_type == "aggre") {
-	    message(date(), " Reference from aggregated FACS/Sort Bulk RNA-seq/microarray/scRNA-seq. ")
+	    message(date(), " Reference from aggregated FACS/Sort bulk RNA-seq/microarray/scRNA-seq. ")
 		ref_matrix = ref
 		meta_ref = data.frame(cell_type = colnames(ref))
 		meta_ref = DataFrame(meta_ref)
 	}
 	
 	if(ref_type == "sort"){
-	message(date(), " Reference from FACS/Sort Bulk RNA-seq/microarray/scRNA-seq dataset. ")
+	message(date(), " Reference from FACS/Sort bulk RNA-seq/microarray/scRNA-seq dataset. ")
 	if(ref_type == "sort" & !is.null(meta_ref)){
 	if (ref_type == "sort" & ncol(meta_ref)==1) {
 		meta_ref = as.matrix(meta_ref)
