@@ -19,7 +19,9 @@ install the newest version of ENIGMA
 ```
 devtools::install_github("WWXKenmo/ENIGMA_test")
 ```
-
+## Notes for usage
+When user need to conduct sample-level score calculation (e.g. Gene Set Activity Analysis (GSVA)) and each sample will be treated independently, please used unnormalized CSE profile
+When user need to integrate all samples to perform calculation (e.g. Differential Expression Gene Analysis, Gene Co-expression Network Inference, Sample Clustering Analysis), please used normalized CSE profile
 ## News
 ### release v1.5
 1. Build FindCSE_DEG function to perform CTS-DEG analysis
