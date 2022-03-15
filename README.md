@@ -15,11 +15,20 @@ install.packages(c("Matrix","S4Vectors","corpcor","MASS","e1071","ggplot2","cowp
 BiocManager::install(c("SingleCellExperiment","scater","Biobase","SummarizedExperiment","sva","preprocessCore"))
 ```
 ### 2. install ENIGMA
+install the newest version of ENIGMA
 ```
-devtools::install_github("WWXKenmo/ENIGMA")
+devtools::install_github("WWXKenmo/ENIGMA_test")
 ```
 
 ## News
+### release v1.5
+1. Build FindCSE_DEG function to perform CTS-DEG analysis
+```
+DEG = FindCSE_DEG(object,y)
+# object: an ENIGMA object
+# y: a binary phenotype vector represents case(1) and control(0)
+```
+
 ### a simple implementation in python (pyENIGMA)
 we have implement the ENIGMA algorithm in python for those people who want to use ENIGMA in python version
 
