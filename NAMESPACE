@@ -2,6 +2,7 @@
 
 export(ENIGMA_L2_max_norm)
 export(ENIGMA_trace_norm)
+export(FindCSE_DEG)
 export(batch_correct)
 export(cell_deconvolve_trace)
 export(clean_model)

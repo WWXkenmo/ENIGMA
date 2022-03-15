@@ -1,7 +1,7 @@
 Package: ENIGMA
 Type: Package
 Title: dEcoNvolutIon method based on reGularized MAtrix completion
-Version: 0.1.1
+Version: 0.1.5
 Author: Weixu Wang, Jun Yao
 Maintainer: Weixu Wang <ken71198@hotmail.com>
 Description: Improved estimation of cell type-specific gene expression through
