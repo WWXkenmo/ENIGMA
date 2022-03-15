@@ -14,4 +14,4 @@ Imports: ggplot2, Matrix, MASS, S4Vectors, SingleCellExperiment,
         SummarizedExperiment, magrittr, methods, nnls, plyr, purrr,
         reshape2, sva, tidyr
 NeedsCompilation: no
-Packaged: 2021-12-24 02:25:09 UTC; WeiXu Wang
+Packaged: 2022-03-15 01:08:33 UTC; WeiXu Wang
