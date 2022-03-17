@@ -27,11 +27,11 @@ get_cell_proportion <- function(object,max.iter = 500,method = "RLR",nu.v) {
     }
     cat( date(), "Calculating cell type proportion of bulk samples... \n" )
 	if(method == "RLR"){
-	cat( "Using Robust Linear Regression...")
+	cat( "Using Robust Linear Regression... \n")
     object@result_cell_proportion = get_proportion(X = object@bulk, ref = object@ref, max.iter = max.iter)$theta
 	}
 	if(method == "CBS"){
-	cat( "Using CIBERSORT...")
+	cat( "Using CIBERSORT... \n")
 	object@result_cell_proportion = DoCBS(beta.m = object@bulk, ref.m = object@ref, nu.v = nu.v)$estF
 	}
     return(object)

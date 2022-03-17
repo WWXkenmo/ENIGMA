@@ -57,7 +57,7 @@
 #'
 #'
 #' @export
-ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000, verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
+ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=0.001, max.iter=1000,verbose=FALSE, pos=TRUE,Normalize = TRUE, Norm.method = "frac",preprocess = "sqrt",loss_his=TRUE,model_tracker=FALSE,model_name = NULL,X_int=NULL){
     suppressPackageStartupMessages(require("scater"))
 	suppressPackageStartupMessages(require("preprocessCore"))
 	
@@ -129,6 +129,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
     cat(date(), 'Optimizing cell type specific expression profile... \n')
             iter.exp <- 0
 			loss <- NULL
+			DisList <- NULL
             repeat{
                 ratio <- NULL
                 dP <- derive_P2(X, theta,P_old,R,alpha)
@@ -137,9 +138,17 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
                     P_old_new[,,i] <- P_hat
                     ratio <- c(ratio, sum( (P_hat-P_old[,,i])^2 ))
                 }
-                if(verbose) writeLines( sprintf("   Ratio ranges from: %f - %f", min(ratio), max(ratio) ) )
+                if(verbose) writeLines( sprintf("   L2 distance ranges from: %f - %f", min(ratio), max(ratio) ) )
 				r <- sub_loss(X, P_old, theta, alpha,beta,R)
                 if(loss_his) loss<- rbind(loss,c(r$part1,r$part2,r$part3))
+				DisList <- c(DisList,max(ratio))
+				if(iter.exp>10){
+				converge_score <- DisList[(length(DisList)-9):length(DisList)] - DisList[(length(DisList)-10):(length(DisList)-1)]
+				if(sum(converge_score)>2){
+				  stop(paste('Convergence Error! please set a higher value for beta or set a smaller value for learning rate (tao_k)\n'
+           ,'Suggest set beta = ',beta*2,' or tao_k = ',tao_k/2,sep=""))
+				}
+				}
                 if(max(ratio) < epsilon||iter.exp >= max.iter){break}else{
 
 	    #update P_old
@@ -147,6 +156,7 @@ ENIGMA_L2_max_norm <- function(object, alpha=0.5, tao_k=0.01, beta=0.1, epsilon=
                     iter.exp <- iter.exp + 1
                 }
             }
+			
         ## Return the Loss
         loss_new.obj <- sub_loss(X, P_old, theta, alpha,beta,R)
         if(verbose) writeLines( paste("Total loss: ", loss_new.obj$val ,sep="") )
@@ -336,44 +346,47 @@ proximalpoint <- function(P, tao_k,dP,beta){
 
 
 derive_P2 <- function(X, theta, P_old,R,alpha){
-    ## P_old: a tensor variable with three dimensions
-    ## theta: the cell type proportions variable
-    ## cell_type_index: optimize which type of cells
-    ## R: reference matrix
-    dP1 <- dP2 <- array(0,
-                        dim = c( nrow(X),
-                                 ncol(X),
-                                 ncol(theta)),
-                        dimnames = list( rownames(X),
-                                         colnames(X),
-                                         colnames(theta))
+  ## P_old: a tensor variable with three dimensions
+  ## theta: the cell type proportions variable
+  ## cell_type_index: optimize which type of cells
+  ## R: reference matrix
+  dP1 <- dP2 <- array(0,
+                      dim = c( nrow(X),
+                               ncol(X),
+                               ncol(theta)),
+                      dimnames = list( rownames(X),
+                                       colnames(X),
+                                       colnames(theta))
+  )
+  for(cell_type_index in 1:ncol(theta)){
+    R.m <- as.matrix(R[,cell_type_index])
+    
+    cell_type_seq <- c(1:ncol(theta))
+    cell_type_seq <- cell_type_seq[cell_type_seq!=cell_type_index]
+    
+    X_summary = Reduce("+",
+                       lapply(cell_type_seq, function(i) P_old[,,i]%*%diag(theta[,i]) )
     )
-    for(cell_type_index in 1:ncol(theta)){
-        R.m <- as.matrix(R[,cell_type_index])
-
-        cell_type_seq <- c(1:ncol(theta))
-        cell_type_seq <- cell_type_seq[cell_type_seq!=cell_type_index]
-
-        X_summary = Reduce("+",
-                           lapply(cell_type_seq, function(i) P_old[,,i]%*%diag(theta[,i]) )
-        )
-        X_summary <- X-X_summary
-
-        dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
-        dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
-    }
-    dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
-    dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
-
-    #calculate w1
-    #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
-    #else if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP2)) ) {w1 = 0}
-    #else {
-    #    w1 = crossprod(as.matrix(dP2-dP1), as.matrix(dP2))/sum((dP1-dP2)^2)
-    #}
-    w1 <- alpha
-    w2 <- 1-w1
-
-    dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
-    return(dP)
+    X_summary <- X-X_summary
+    
+    dP1[,,cell_type_index] <- 2*(P_old[,,cell_type_index]%*%diag(theta[,cell_type_index]) - X_summary)%*%diag(theta[,cell_type_index])
+    dP2[,,cell_type_index] <- 2*(as.matrix(rowMeans(P_old[,,cell_type_index]))-R.m)%*%t(as.matrix(rep((1/ncol(dP2[,,cell_type_index])),ncol(dP2[,,cell_type_index]))))
+	}
+  dP1 = dP1 / sqrt( sum( dP1^2 ) ) * 1e5
+  dP2 = dP2 / sqrt( sum( dP2^2 ) ) * 1e5
+  
+  #calculate w1
+  #if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP1)) ) {w1 = 1}
+  #else if( crossprod(as.matrix(dP1), as.matrix(dP2)) >= crossprod(as.matrix(dP2)) ) {w1 = 0}
+  #else {
+  #    w1 = crossprod(as.matrix(dP2-dP1), as.matrix(dP2))/sum((dP1-dP2)^2)
+  #}
+  w1 <- alpha
+  w2 <- 1-w1
+  
+  dP <- dP1*as.numeric(w1) + dP2*as.numeric(w2)
+  return(dP)
 }
+
+
+
