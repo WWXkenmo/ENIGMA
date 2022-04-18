@@ -1,6 +1,6 @@
 ############################################
 ##Simulation code for DEG detection
-SNR <- 1.8 ## chose the signal to noise ratio level and generate expression profile for deconvolution
+DE <- 1.8 ## chose the  differential effect level and generate expression profile for deconvolution
 k <- 5 # number of cell types
 ng <- 1000 # number of genes
 p <- 100 # number of samples
@@ -14,7 +14,7 @@ DEG_list <- list()
 seq <- 1:ncol(H2)
 for(i in 1:nrow(H2)){
     DEG_id <- sample(1:ncol(H2),ndiff,replace=FALSE) ## randomly select the DEG
-	add <- sample(c(SNR, -SNR),ndiff,replace=TRUE) ## randomly generate up-regulated or down-regulated genes
+	add <- sample(c(DE, -DE),ndiff,replace=TRUE) ## randomly generate up-regulated or down-regulated genes
     H2[i,DEG_id] <- H2[i,DEG_id] + add ## add to the case group
     DEG_list[[i]] <- DEG_id * sign(add) ## generate the DEG list
     #seq <- seq[seq %in% DEG_id == FALSE]
@@ -56,5 +56,6 @@ y <- gl(2, p/2)
 #################################
 ##return the bulk and reference profile
 
+SNR = DE/sd(as.numeric(G))
 save(G,H1,DEG_list,file=paste("/Data/to/Path/Simulation/SNR_",SNR,"_Data.rdata",sep=""))
 ## our simulated datasets are provided in https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/cts_DEG
