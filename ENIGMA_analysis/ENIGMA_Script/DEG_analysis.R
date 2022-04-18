@@ -179,9 +179,6 @@ DEG_test1 <- function(X_array,y,theta,method = NULL,n_sample,DEG_list,qval=FALSE
 }
 #####calculate two cases of ENIGMA
 ## After ANOVA test (improved precision)
-## After gene number control (further improved precision)
-## only for compare of ENIGMA and bMIND
-## qvalue < 0.05
 
 DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
 	O = array(0,
@@ -220,7 +217,7 @@ DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
 	mat <- ENIGMA_result[,,ct]
 	fc <- NULL
 	for(i in 1:nrow(mat)){
-	fc <- c(fc, summary(lm(mat[i,]~as.numeric(y)))$coefficients[2,1])
+	fc <- c(fc, summary(lm(mat[i,]~as.numeric(y)))$coefficients[2,1]) ## lm model is used for evaluating DE directions (upregulated or downregulated)
 	}
 	lm.test <- result_enigma$qval[ct,]
 	lm.test[lm.test==1] <- 0.99
@@ -254,9 +251,7 @@ DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
 	num_gene <- c(num_gene, sum(lm.test!=0))
 	}
 	res_bmind <- c(mean(se),mean(sp),mean(pre),mean(num_gene))
-	##We could observed that even though using this method bMIND has very high precision, but meanwhile its sensitivity is significantly reduced, even worse that bulk
 	
-	##We note that ENIGMA has both higher sensitivity and precision than bulk, and also, if we control the significant genes equal to the bMIND, we also could find ENIGMA has pretty high precision values. 
 	se <- sp <- pre <- num_gene <- NULL
 	for(ct in 1:dim(bMIND_result)[3]){
 	mat <- ENIGMA_result[,,ct]
@@ -328,7 +323,7 @@ deconv_simulate = MIND::bMIND(bulk=G, profile = sig, ncore = 3,frac=Fra_Simulate
 ENIGMA_trace <- cell_deconvolve_trace(O = as.matrix(G),
                                               theta=Fra_Simulate$theta,
                                               R=t(H1),
-                                              alpha=0.1,beta=1,solver="admm",
+                                              alpha=0.1,beta=1,solver="proximalpoint",
                                               verbose=FALSE,max.iter = 1000,Normalize=FALSE,pos=FALSE)
 ENIGMA_l2max <- cell_deconvolve(X=as.matrix(G),
                                         theta=Fra_Simulate$theta,
@@ -414,7 +409,7 @@ deconv_simulate = MIND::bMIND(bulk=G, profile = sig, ncore = 3,frac=Fra_Simulate
 ENIGMA_trace <- cell_deconvolve_trace(O = as.matrix(G),
                                               theta=Fra_Simulate$theta,
                                               R=t(H1),
-                                              alpha=0.1,beta=1,solver="admm",
+                                              alpha=0.1,beta=1,solver="proximalpoint",
                                               verbose=FALSE,max.iter = 1000,pos=FALSE,Norm.method = "frac",pre.process="none")
 ENIGMA_l2max <- cell_deconvolve(X=as.matrix(G),
                                         theta=Fra_Simulate$theta,
@@ -433,9 +428,10 @@ for(i in 1:dim(Z_Tab)[2]){
 res <- DEG_test2(ENIGMA_trace$X_k,deconv_simulate$A,y,Fra_Simulate$theta,DEG_list_all[[rep]])
 res2 <- DEG_test2(ENIGMA_trace$X_k,Z_Tab,y,Fra_Simulate$theta,DEG_list_all[[rep]])
 
-line <- c(res[[2]][3],res2[[2]][3],res2[[1]][3],res2[[3]][3])
+# Perform results: bMIND, TCA, and ENIGMA
+line <- c(res[[2]][3],res2[[2]][3],res2[[1]][3])
 Precision <- rbind(Precision,line)
-line <- c(res[[2]][1],res2[[2]][1],res2[[1]][1],res2[[3]][1])
+line <- c(res[[2]][1],res2[[2]][1],res2[[1]][1])
 Sensitivity <- rbind(Sensitivity,line)
 
 save(Precision,file=paste("/mnt/data1/weixu/HiDe/revised/DEG/",ES[es],"_precision.Rdata",sep=""))
