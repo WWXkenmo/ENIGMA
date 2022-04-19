@@ -21,16 +21,16 @@ Both scripts could be downloaded through following links:
 
 * [Simulate cell type-specific gene expression profile to assess CTS-DEGs detection accuracy](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(DEG).R)
 
-  [Benchmark CTS-DEG detection performance](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis.R)
+  [Benchmark CTS-DEG detection performance (Fig3, Supp Fig S8)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis.R)
 
-* [Identify four latent cell senescence states in Fibroblast](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/latentCellState.R)
+* [Identify four latent cell senescence states in Fibroblast (Fig2d)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/latentCellState.R)
 
-* [Identify cell type specific pseudo-trajectory](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ESCO_path.R)
+* [Identify cell type specific pseudo-trajectory (Supp Fig S3)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ESCO_path.R)
 
 ### Real Data analysis
-#### Deconvolution analysis for arthritis patients(HTML format): 
+#### Deconvolution analysis for arthritis patients(Fig4, HTML format): 
 * [link](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/RA/Deconvolution-Analysis-for-Arthritis-Patients.html)
-#### Deconvolution analysis for T2D patients(HTML format): 
+#### Deconvolution analysis for T2D patients(Fig5, HTML format): 
 * [Part-1](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/The-deconvolution-analysis-in-pancreas-islet-tissues.html)
 * [Part-2](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
 
