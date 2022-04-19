@@ -344,7 +344,7 @@ colnames(res) <- c("method","SCC")
 res <- as.data.frame(res)
 res$SCC <- as.numeric(as.matrix(res$SCC))
 res_all <- res
-saveRDS(res_all,file="result_to_plot_tumor(gene_all).rds")
+saveRDS(res_all,file="result_to_plot_tumor(gene).rds")
 
 
 ##############
@@ -356,7 +356,7 @@ colnames(res) <- c("method","SCC")
 res <- as.data.frame(res)
 res$SCC <- as.numeric(as.matrix(res$SCC))
 res_all <- res
-saveRDS(res_all,file="result_to_plot_fibro(gene_all).rds")
+saveRDS(res_all,file="result_to_plot_fibro(gene).rds")
 
 
 ##############
@@ -368,7 +368,7 @@ colnames(res) <- c("method","SCC")
 res <- as.data.frame(res)
 res$SCC <- as.numeric(as.matrix(res$SCC))
 res_all <- res
-saveRDS(res_all,file="result_to_plot_endo(gene_all).rds")
+saveRDS(res_all,file="result_to_plot_endo(gene).rds")
 
 ########################################
 B <- readRDS("result_to_plot_tumor.rds")
@@ -425,6 +425,109 @@ ggplot(B, aes(method,SCC,fill = method)) +
   theme(legend.text = element_text(size = 16),legend.title = element_text(size = 18), legend.background = element_rect(fill = "white"))
 dev.off()
 ###################################################################
+## assess using new statistical model could infer which gene is easier to be inferred
+res <- bulkRegTest(Bulk[rownames(tmp$main_celltype),],Fra$theta,p_threshold=0.01)
+res2 <- bulkRegTest(Bulk[rownames(tmp$main_celltype),],Fra$theta,p_threshold=0.05) 
+res3 <- bulkRegTest(Bulk[rownames(tmp$main_celltype),],Fra$theta,p_threshold=0.1)   
+res4 <- bulkRegTest(Bulk[rownames(tmp$main_celltype),],Fra$theta,p_threshold=0.2)    
+res5 <- bulkRegTest(Bulk[rownames(tmp$main_celltype),],Fra$theta,p_threshold=0.4) 
+
+## Evaluate Tumor Cell
+pvalTab <- data.frame(pvalue = c(
+			 rep("0.01",colSums(res$call)[6]),
+             rep("0.05",colSums(res2$call)[6]),
+			 rep("0.1",colSums(res3$call)[6]),
+			 rep("0.2",colSums(res4$call)[6]),
+			 rep("0.4",colSums(res5$call)[6])),
+		   correlation = c(
+		tumor_trace1[res$call[,6]==1],
+        tumor_trace1[res2$call[,6]==1],
+		tumor_trace1[res3$call[,6]==1],
+		tumor_trace1[res4$call[,6]==1],
+		tumor_trace1[res5$call[,6]==1]))
+		
+ 
+png("boxplot.png",res=300,height=1500,width=1700)
+bp <- ggplot(pvalTab, aes(x=pvalue, y=correlation, fill=pvalue)) + 
+  geom_boxplot()+
+  labs(x="P-value Cutoff", y = "Correlation Per Gene")
+bp + theme_classic()  + scale_fill_brewer(palette="Blues") + theme_classic()
+dev.off()
+
+
+pvalTab <- data.frame(pvalue = c(
+			 rep("0.01",colSums(res$call)[6]),
+             rep("0.05",colSums(res2$call)[6]),
+			 rep("0.1",colSums(res3$call)[6]),
+			 rep("0.2",colSums(res4$call)[6]),
+			 rep("0.4",colSums(res5$call)[6])),
+		   correlation = c(
+		tumor_l2max1[res$call[,6]==1],
+        tumor_l2max1[res2$call[,6]==1],
+		tumor_l2max1[res3$call[,6]==1],
+		tumor_l2max1[res4$call[,6]==1],
+		tumor_l2max1[res5$call[,6]==1]))
+		
+ 
+png("boxplot(l2ma1).png",res=300,height=1500,width=1700)
+bp <- ggplot(pvalTab, aes(x=pvalue, y=correlation, fill=pvalue)) + 
+  geom_boxplot()+
+  labs(x="P-value Cutoff", y = "Correlation Per Gene")
+bp + theme_classic()  + scale_fill_brewer(palette="Blues") + theme_classic()
+dev.off()
+
+########################
+# Perform Compare between P-value < 0.01 & P-value > 0.01
+
+pvalTab <- data.frame(pvalue = c(
+			 rep("<0.01",colSums(res$call)[6]),
+             rep(">0.01",nrow(res$call) - colSums(res$call)[6])),
+		   correlation = c(
+		tumor_trace1[res$call[,6]==1],
+        tumor_trace1[res$call[,6]==0]))
+
+png("boxplot(<0.01).png",res=300,height=1500,width=1500)
+bp <- ggplot(pvalTab, aes(x=pvalue, y=correlation, fill=pvalue)) + 
+  geom_boxplot()+
+  labs(x=" ", y = "Correlation Per Gene")
+bp + theme_classic()  + scale_fill_brewer(palette="Blues") + theme_classic()
+dev.off()
+
+
+pvalTab <- data.frame(pvalue = c(
+			 rep("<0.01",colSums(res$call)[6]),
+             rep(">0.01",nrow(res$call) - colSums(res$call)[6])),
+		   correlation = c(
+		tumor_l2max1[res$call[,6]==1],
+        tumor_l2max1[res$call[,6]==0]))
+
+png("boxplot(<0.01,l2max1).png",res=300,height=1500,width=1500)
+bp <- ggplot(pvalTab, aes(x=pvalue, y=correlation, fill=pvalue)) + 
+  geom_boxplot()+
+  labs(x=" ", y = "Correlation Per Gene")
+bp + theme_classic()  + scale_fill_brewer(palette="Blues") + theme_classic()
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##function
 quantile_thr <- function(seq,vec){
