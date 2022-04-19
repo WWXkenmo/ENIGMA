@@ -513,3 +513,210 @@ p_boxplot_Precision_all <- Precision_dat %>%
 png("FDR.png",res=300,height=1500,width=3000)
 p_boxplot_Precision_all
 dev.off()
+
+#####################################################################################################
+###Randomly adapte 6 different SNR genes (num:150), Draw the plots for comparision
+k <- 5 # number of cell types
+ng <- 1000 # number of genes
+p <- 100 # number of samples
+ndiff <- 0.1*1000 # number of genes differentially expressed
+
+H1 <- matrix(rnorm(5*ng), ncol=ng)
+H2 <- H1
+# create differential expression for 3rd cell type
+DEG_list_all <- list()
+SNR <- c(1.8,2.4,3,3.6,4.2,4.8)
+for(snr in SNR){
+DEG_list <- list()
+for(i in 1:nrow(H2)){
+    DEG_id <- sample(1:ncol(H2),6,replace=FALSE)
+	add <- sample(c(snr,-1*snr),6,replace=TRUE)
+    H2[i,DEG_id] <- H2[i,DEG_id] + add
+    DEG_list[[i]] <- DEG_id * sign(add)
+    #seq <- seq[seq %in% DEG_id == FALSE]
+}
+DEG_list_all[[as.character(snr)]] <- DEG_list
+}
+
+
+
+# cell frequency matrix per sample
+cc <- matrix(runif(p*k), ncol=k)
+cc <- t(scale(t(cc), center=FALSE, scale=rowSums(cc)))
+colnames(cc) <- paste('cellType', 1:ncol(cc), sep="")
+
+# sample classes (2 groups)
+y <- gl(2, p/2)
+
+###Add the noise to each cell type and generate a sample specific profile
+H1_array <- array(0,
+                  dim = c( nrow(H1),
+                           ncol(H1),
+                           (floor(100/2))))
+for(i in 1:(floor(p/2))){
+    H1_array[,,i] <- H1 + matrix(rnorm(5*ng), ncol=ng)
+}
+H2_array <- array(0,
+                  dim = c( nrow(H2),
+                           ncol(H2),
+                           (floor(100/2))))
+for(i in 1:(floor(p/2))){
+    H2_array[,,i] <- H2 + matrix(rnorm(5*ng), ncol=ng)
+}
+##evaluate differential expression genes
+##calculate 
+G <- NULL
+for(i in 1:50){
+    G <- cbind(G, t(as.matrix(t(as.matrix(cc[i,])) %*% H1_array[,,i])))
+}
+for(i in 1:50){
+    G <- cbind(G, t(as.matrix(t(as.matrix(cc[i+50,])) %*% H2_array[,,i])))
+}
+G <- G + t(matrix(rnorm(100*ng), ncol=ng))
+
+#########################################################################
+#Generate ground truth mean different effects
+H1_array_mean <- NULL
+for(i in 1:5){
+  H1_array_mat <- H1_array[i,,]
+  H1_array_mean <- cbind(H1_array_mean, rowMeans(H1_array_mat))
+}
+
+H2_array_mean <- NULL
+for(i in 1:5){
+  H2_array_mat <- H2_array[i,,]
+  H2_array_mean <- cbind(H2_array_mean, rowMeans(H2_array_mat))
+}
+
+SNR <- c(1.8,2.4,3,3.6,4.2,4.8)
+meanDiff <- NULL
+for(snr in SNR){
+  diff.all <- gene.idx.all <- ct.id.all <- NULL  
+  for(ct in 1:5){ 
+     diff <- H2_array_mean[abs(DEG_list_all[[as.character(snr)]][[ct]]),ct] - H1_array_mean[abs(DEG_list_all[[as.character(snr)]][[ct]]),ct]
+     gene.idx <- abs(DEG_list_all[[as.character(snr)]][[ct]])
+	 ct.id <- rep(paste("celltype-",ct,sep=""), length(diff))
+	 diff.all <- c(diff.all,diff)
+	 gene.idx.all <- c(gene.idx.all,gene.idx)
+	 ct.id.all <- c(ct.id.all,ct.id)
+  }
+  tab <- cbind(diff.all,gene.idx.all,ct.id.all)
+  tab <- cbind(tab,rep(snr,nrow(tab)))
+  meanDiff <- rbind(meanDiff,tab)
+}
+meanDiff <- as.data.frame(meanDiff)
+colnames(meanDiff) <- c("True expression diff.","gene.idx","celltype","SNR")
+
+meanDiff$gene.idx <- as.integer(meanDiff$gene.idx)
+##############
+y <- gl(2, p/2)
+
+###estimate fractions
+rownames(G) <- colnames(H1) <- colnames(H2) <- paste0("gene",c(1:nrow(G)))
+Fra_Simulate <- get_proportion(G, t(H1))
+
+colnames(Fra_Simulate$theta) <- colnames(cc)
+rownames(Fra_Simulate$theta) <- colnames(G) <- paste0("Sample",1:ncol(G))
+bulk <- G
+tca.mdl <- tca(X = bulk, W = Fra_Simulate$theta, C1 = NULL, C2 = NULL,
+                parallel = TRUE)
+Z_hat_simulate <- tensor(X = (as.matrix(bulk)), tca.mdl)
+
+
+rownames(G) <- colnames(H1) <- colnames(H2) <- paste0("gene",c(1:nrow(G)))
+rownames(H1) <- paste0("celltype",1:nrow(H1))
+Fra_Simulate <- get_proportion(G, t(H1))
+colnames(Fra_Simulate$theta) <- colnames(cc)
+rownames(Fra_Simulate$theta) <- colnames(G) <- paste0("Sample",1:ncol(G))
+res_alg_all_simulate <- cell_deconvolve_trace(O = as.matrix(G),
+                                              theta=Fra_Simulate$theta,
+                                              R=t(H1),
+                                              alpha=0.1,beta=1,solver="proximalpoint",
+                                              verbose=FALSE,max.iter = 1000,pos=FALSE,Norm.method = "frac",pre.process="none")
+
+sig <- t(H1)
+colnames(sig) <- paste0("cellType",1:5)
+deconv_simulate = MIND::bMIND(bulk=G, profile = sig, ncore = 3,frac=Fra_Simulate$theta)
+
+##############################
+#Analysis
+meanDiff <- rbind(subset(meanDiff, celltype %in% "celltype-1"),
+                  subset(meanDiff, celltype %in% "celltype-2"),
+				  subset(meanDiff, celltype %in% "celltype-3"),
+				  subset(meanDiff, celltype %in% "celltype-4"),
+				  subset(meanDiff, celltype %in% "celltype-5"))
+index <- c(1:5);names(index) <- c("celltype-1","celltype-2","celltype-3","celltype-4","celltype-5")
+y <- as.numeric(gl(2, p/2))
+
+meanDiff$`True expression diff.` <- as.numeric(as.matrix(meanDiff$`True expression diff.`))
+
+estDiff <- NULL
+for(i in c("celltype-1","celltype-2","celltype-3","celltype-4","celltype-5")){
+  geneList <- subset(meanDiff,celltype %in% i)$gene.idx
+  estimateDiff <- rowMeans(G[geneList,y==2]) - rowMeans(G[geneList,y==1])
+  estDiff <- c(estDiff,estimateDiff)
+}
+
+meanDiff$estDiff <- estDiff
+print(paste("Correlation between True and Estimation ",cor(meanDiff$`True expression diff.`,meanDiff$estDiff)))
+
+
+
+estDiff <- NULL
+for(i in c("celltype-1","celltype-2","celltype-3","celltype-4","celltype-5")){
+  geneList <- subset(meanDiff,celltype %in% i)$gene.idx
+  estimateDiff <- rowMeans(Z_hat_simulate[[index[i]]][geneList,y==2]) - rowMeans(Z_hat_simulate[[index[i]]][geneList,y==1])
+  estDiff <- c(estDiff,estimateDiff)
+}
+
+meanDiff$estDiff <- estDiff
+print(paste("Correlation between True and Estimation ",cor(meanDiff$`True expression diff.`,meanDiff$estDiff)))
+
+
+estDiff <- NULL
+for(i in c("celltype-1","celltype-2","celltype-3","celltype-4","celltype-5")){
+  geneList <- subset(meanDiff,celltype %in% i)$gene.idx
+  estimateDiff <- rowMeans(deconv_simulate$A[geneList,index[i],y==2]) - rowMeans(deconv_simulate$A[geneList,index[i],y==1])
+  estDiff <- c(estDiff,estimateDiff)
+}
+
+meanDiff$estDiff <- estDiff
+print(paste("Correlation between True and Estimation ",cor(meanDiff$`True expression diff.`,meanDiff$estDiff)))
+
+
+estDiff <- NULL
+for(i in c("celltype-1","celltype-2","celltype-3","celltype-4","celltype-5")){
+  geneList <- subset(meanDiff,celltype %in% i)$gene.idx
+  estimateDiff <- rowMeans(res_alg_all_simulate$X_k_norm[geneList,y==2,index[i]]) - rowMeans(res_alg_all_simulate$X_k_norm[geneList,y==1,index[i]])
+  estDiff <- c(estDiff,estimateDiff)
+}
+
+meanDiff$estDiff <- estDiff
+print(paste("Correlation between True and Estimation ",cor(meanDiff$`True expression diff.`,meanDiff$estDiff)))
+
+##########################################
+mytheme <- readRDS("mytheme.rds")
+png("scatter_plot.png",res=300,height=1500,width=1500)
+ggplot(meanDiff, aes(x=estDiff, y=`True expression diff.`)) +
+    geom_point(aes(color=celltype,shape=SNR))+
+    mytheme + labs(y="True expression diff.",x= "Predicted expression diff")
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
