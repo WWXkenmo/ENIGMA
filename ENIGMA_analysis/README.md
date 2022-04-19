@@ -19,6 +19,8 @@ Both scripts could be downloaded through following links:
 ### Simulation analysis
 * [Using tumor scRNA-seq data to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
+* [Deconvolve NSCLC datasets with scRNA-seq datasets as reference (Fig2c)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NSCLC_test.R)
+
 * [Simulate cell type-specific gene expression profile to assess CTS-DEGs detection accuracy](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(DEG).R)
 
   [Benchmark CTS-DEG detection performance (Fig3, Supp Fig S8)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis.R)
