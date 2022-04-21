@@ -237,7 +237,7 @@ dev.off()
 
 #########################
 ##Using bMIND to evaluate
-bmind_res = bMIND(bulk=sqrt(PseudoBulk), profile = sqrt(ref), ncore = 6,frac=Frac$theta)
+bmind_res = bMIND(bulk=log2(PseudoBulk+1), profile = log2(ref+1), ncore = 6,frac=Frac$theta)
 ####regress out the fraction effects
 exp <- bmind_res$A[,1,]^2
 exp.scale <- t(apply(exp,1,scale))
