@@ -191,7 +191,6 @@ png("TCA_traj2.png",res=300,height=1000,width=1500)
 plotReducedDim(TCA2,colour_by = "Step",dimred = "DiffusionMap",point_size = 3,point_alpha=1)+theme_bw()+theme(axis.text = element_blank(),axis.ticks = element_blank(),panel.grid = element_blank(),text = element_text(size=15))
 dev.off()
 ####Running ENIGMA
-res <- ParameterTuning(sqrt(PseudoBulk), sqrt(ref), Frac$theta, beta_set = 0,metric="Sensitivity",n_sample = floor(0.01*(nrow(PseudoBulk_Normalized)*ncol(PseudoBulk_Normalized))), nround=10,alpha_set = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9))
 egm2 <- cell_deconvolve(X=as.matrix(sqrt(PseudoBulk)),
                                     theta=Frac$theta,
                                     R=sqrt(ref),
