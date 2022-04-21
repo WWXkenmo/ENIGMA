@@ -227,7 +227,7 @@ enigma_trace <- runUMAP(enigma_trace,dimred="PCA",n_dimred=10)
 
 #########################
 ##Using bMIND to evaluate
-bmind_res = bMIND2(sqrt(PseudoBulk),ncore = 3, frac = Frac$theta, profile = sqrt(ref), noRE = FALSE)
+bmind_res = bMIND(bulk=sqrt(PseudoBulk), profile = sqrt(ref), ncore = 6,frac=Frac$theta)
 bmind <- SingleCellExperiment(assays=list(logcounts = (bmind_res$A[,1,])))
 bmind$Group <- idCell$Fibroblast		 
 bmind <- runPCA(bmind)
