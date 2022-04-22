@@ -31,10 +31,10 @@ Both scripts could be downloaded through following links:
 
 ### Real Data analysis
 #### Deconvolution analysis for arthritis patients(Fig4, HTML format): 
-* [link](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/RA/Deconvolution-Analysis-for-Arthritis-Patients2.html)
+* [link](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/tree/master/vignettes/Deconvolution-Analysis-for-Arthritis-Patients2.html)
 #### Deconvolution analysis for T2D patients(Fig5, HTML format): 
 * [Part-1](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/The-deconvolution-analysis-in-pancreas-islet-tissues.html)
-* [Part-2](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
+* [Part-2](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/tree/master/vignettes/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
 
 ## Code for supplementary note
 #### 1. [Using COVID-19 PBMC single cell datasets to explain the role of parameter alpha](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(mutilPaltforms).R) (Supplementary Figure N8)
