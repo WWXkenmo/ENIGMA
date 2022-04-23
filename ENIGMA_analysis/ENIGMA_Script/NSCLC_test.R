@@ -26,17 +26,17 @@ colnames(tmp$main_celltype) <- c("B_cell","EC","Fibro","Myeloid","T_cell","Tumor
 Fra <- get_proportion(X=Bulk,ref=tmp$main_celltype)
 
 egm_trace1 <- cell_deconvolve_trace(as.matrix(log2(Bulk+1)[rownames(tmp$main_celltype),]),Fra$theta,as.matrix(log2(tmp$main_celltype+1)),beta=1,verbose=FALSE,gamma=1,alpha=0.9,Normalize=FALSE,max.iter=1000)
-egm_l2max1 <- cell_deconvolve(X=as.matrix(log2(Bulk+1)[rownames(tmp$main_celltype),]),
+egm_l2max1 <- cell_deconvolve(X=as.matrix(sqrt(Bulk)[rownames(tmp$main_celltype),]),
                     theta=Fra$theta,
-					R=as.matrix(log2(tmp$main_celltype+1)),
+					R=as.matrix(sqrt(tmp$main_celltype)),
 					epsilon = 0.001,
 					alpha=0.9,
 					beta=0.5,tao_k=0.01,max.iter=1000,verbose=FALSE,Normalize=FALSE)
 
 Bulk_f <- Bulk[rownames(tmp$main_celltype),][apply(Bulk[rownames(tmp$main_celltype),],1,var)>10^-8,]
-tca.mdl <- tca(X = log2(Bulk_f+1), W = Fra$theta, C1 = NULL, C2 = NULL,
+tca.mdl <- tca(X = sqrt(Bulk_f), W = Fra$theta, C1 = NULL, C2 = NULL,
                 parallel = TRUE,num_cores=3);
-Z_hat <- tensor(X = log2(Bulk_f+1), tca.mdl)
+Z_hat <- tensor(X = sqrt(Bulk_f), tca.mdl)
 ##########################################################
 ###Estimation of bMIND
 deconv = bMIND(log2(Bulk[rownames(tmp$main_celltype),]+1), frac = Fra$theta, profile=log2(tmp$main_celltype+1),  ncore = 5)
