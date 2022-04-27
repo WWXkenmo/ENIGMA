@@ -185,339 +185,319 @@ colnames(ref) = colnames(idCell)
 #Evaluation
 ##calculate cell fraction matrix
 Frac <- get_proportion(PseudoBulk, ref)
-
-##Running TCA
+### run two TCA model
 tca.mdl = tca(X = sqrt(PseudoBulk), W = Frac$theta, C1 = NULL, C2 = NULL,
                 parallel = TRUE,num_cores=4,max_iters=20)
-TCA_res2 <- tensor(X = (as.matrix(sqrt(PseudoBulk))), tca.mdl)
+TCA_res1 <- tensor(X = (as.matrix(sqrt(PseudoBulk))), tca.mdl)
 
-TCA <- SingleCellExperiment(assays=list(logcounts = (TCA_res2[[1]])))
-TCA$Group <- idCell$Fibroblast			 
-TCA <- runPCA(TCA)
-TCA <- runUMAP(TCA,dimred="PCA",n_dimred=10)
-png("tca.png",res=300,height=1500,width=1500)
-p_TCA_mds
-dev.off()
+tca.mdl = tca(X = log2(PseudoBulk+1), W = Frac$theta, C1 = NULL, C2 = NULL,
+                parallel = TRUE,num_cores=4,max_iters=20)
+TCA_res2 <- tensor(X = (as.matrix(log2(PseudoBulk+1))), tca.mdl)
 
+### run bMIND model
+deconv1 = bMIND(bulk=sqrt(PseudoBulk), profile = sqrt(ref), ncore = 6,frac=Frac$theta)
+deconv2 = bMIND(bulk=log2(PseudoBulk+1), profile = log2(ref+1), ncore = 6,frac=Frac$theta)
 
-####Running ENIGMA
-egm <- cell_deconvolve(X=as.matrix(sqrt(PseudoBulk)),
+### run ENIGMA model
+
+egm1 <- cell_deconvolve(X=as.matrix(sqrt(PseudoBulk)),
                                     theta=Frac$theta,
                                     R=sqrt(ref),
                                     epsilon=0.001,
                                     alpha=0.1,
-                                    beta=0.5,tao_k=0.01,max.iter=1000,verbose=TRUE,pre.process = "sqrt",Norm.method = "PC")
+                                    beta=0.1,tao_k=0.01,max.iter=50,verbose=TRUE,pre.process = "sqrt",Norm.method = "PC")
 
-###Running Trace Norm
-egm_trace <- cell_deconvolve_trace(O = as.matrix(sqrt(PseudoBulk)),
+egm2 <- cell_deconvolve(X=as.matrix(log2(PseudoBulk+1)),
+                                    theta=Frac$theta,
+                                    R=log2(ref+1),
+                                    epsilon=0.001,
+                                    alpha=0.1,
+                                    beta=0.1,tao_k=0.01,max.iter=50,verbose=TRUE,pre.process = "log",Norm.method = "PC")
+									
+### run ENIGMA(trace) model
+
+egm_trace1 <- cell_deconvolve_trace(O = as.matrix(sqrt(PseudoBulk)),
                                                 theta=Frac$theta,
                                                 R=sqrt(ref),
-                                                alpha=0.1,beta=1,solver="admm",
-                                                verbose=TRUE,max.iter = 1000,pre.process = "sqrt",Norm.method = "PC")
+                                                alpha=0.1,beta=1,solver="admm",gamma = 0.5,
+                                                verbose=FALSE,max.iter = 1000,pre.process = "sqrt",Norm.method = "PC")
+												
+egm_trace2 <- cell_deconvolve_trace(O = as.matrix(log2(PseudoBulk+1)),
+                                                theta=Frac$theta,
+                                                R=log2(ref+1),
+                                                alpha=0.1,beta=1,solver="admm",gamma = 0.5,
+                                                verbose=FALSE,max.iter = 1000,pre.process = "log",Norm.method = "PC")
 
-enigma <- SingleCellExperiment(assays=list(logcounts = egm$X_k_norm[,,1]))
-enigma$Group <- idCell$Fibroblast				 
-enigma <- runPCA(enigma)
-enigma <- runUMAP(enigma,dimred="PCA",n_dimred=10)
+### evaluation												
+												
+### compare TCA
+tca1 <- SingleCellExperiment(assays=list(logcounts =  TCA_res1[[1]]^2))
+tca1$Group <- idCell$Fibroblast		 
+tca1 <- runPCA(tca1)
+tca1 <- runUMAP(tca1,dimred="PCA",n_dimred=10)
+tca1 <- runTSNE(tca1,dimred="PCA",n_dimred=10)
 
-enigma_trace <- SingleCellExperiment(assays=list(logcounts = egm_trace$X_k_norm[,,1]))
-enigma_trace$Group <- idCell$Fibroblast				 
-enigma_trace <- runPCA(enigma_trace)
-enigma_trace <- runUMAP(enigma_trace,dimred="PCA",n_dimred=10)
-
-#########################
-##Using bMIND to evaluate
-bmind_res = bMIND(bulk=log2(PseudoBulk+1), profile = log2(ref+1), ncore = 6,frac=Frac$theta)
-bmind <- SingleCellExperiment(assays=list(logcounts = (bmind_res$A[,1,])))
-bmind$Group <- idCell$Fibroblast		 
-bmind <- runPCA(bmind)
-bmind <- runUMAP(bmind,dimred="PCA",n_dimred=10)
-
-########################
-##Using raw expression profile to compare
-bulk_plot <- SingleCellExperiment(assays=list(logcounts = PseudoBulk))
-bulk_plot$Group <- idCell$Fibroblast				 
-bulk_plot <- runPCA(bulk_plot)
-bulk_plot <- runUMAP(bulk_plot,dimred="PCA",n_dimred=10)
-
-########################
-##plot the ground truth
-groundtruth <- SingleCellExperiment(assays=list(logcounts = H1_array[1,,]))
-groundtruth$Group <- idCell$Fibroblast				 
-groundtruth <- runPCA(groundtruth)
-groundtruth <- runUMAP(groundtruth,dimred="PCA",n_dimred=10)
-
-
-#######################
-#Evaluate through adjusted rand index
-ARI_bulk <- NULL
+ARI_tca1 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(bulk_plot,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(bulk_plot$Group)),as.numeric(clust$cluster))
+clust <- cluster::pam(reducedDim(tca1,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(tca1$Group)),as.numeric(clust$cluster))
 print(ARI)
-ARI_bulk <- c(ARI_bulk,ARI)
+ARI_tca1 <- c(ARI_tca1,ARI)
 }
 
-ARI_tca <- NULL
+
+tca2 <- SingleCellExperiment(assays=list(logcounts =  2^TCA_res2[[1]]-1))
+tca2$Group <- idCell$Fibroblast		 
+tca2 <- runPCA(tca2)
+tca2 <- runUMAP(tca2,dimred="PCA",n_dimred=10)
+tca2 <- runTSNE(tca2,dimred="PCA",n_dimred=10)
+
+ARI_tca2 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(TCA,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(TCA$Group)),as.numeric(clust$cluster))
+clust <- cluster::pam(reducedDim(tca2,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(tca2$Group)),as.numeric(clust$cluster))
 print(ARI)
-ARI_tca <- c(ARI_tca,ARI)
+ARI_tca2 <- c(ARI_tca2,ARI)
 }
 
-ARI_bmind <- NULL
+
+
+bmind1 <- SingleCellExperiment(assays=list(logcounts =  deconv1$A[,1,]^2))
+bmind1$Group <- idCell$Fibroblast		 
+bmind1 <- runPCA(bmind1)
+bmind1 <- runUMAP(bmind1,dimred="PCA",n_dimred=10)
+bmind1 <- runTSNE(bmind1,dimred="PCA",n_dimred=10)
+
+ARI_bmind1 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(bmind,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(bmind$Group)),as.numeric(clust$cluster))
+clust <- cluster::pam(reducedDim(bmind1,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(bmind1$Group)),as.numeric(clust$cluster))
 print(ARI)
-ARI_bmind <- c(ARI_bmind,ARI)
+ARI_bmind1 <- c(ARI_bmind1,ARI)
 }
 
-ARI_enigma <- NULL
+
+bmind2 <- SingleCellExperiment(assays=list(logcounts =  2^deconv2$A[,2,]-1)) ## reconstructed bMIND into raw space
+bmind2$Group <- idCell$Fibroblast		 
+bmind2 <- runPCA(bmind2)
+bmind2 <- runUMAP(bmind2,dimred="PCA",n_dimred=10)
+bmind2 <- runTSNE(bmind2,dimred="PCA",n_dimred=10)
+
+ARI_bmind2 <- NULL
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(enigma,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma$Group)),as.numeric(clust$cluster))
+clust <- cluster::pam(reducedDim(bmind2,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(bmind2$Group)),as.numeric(clust$cluster))
 print(ARI)
-ARI_enigma <- c(ARI_enigma,ARI)
+ARI_bmind2 <- c(ARI_bmind2,ARI)
 }
 
-ARI_enigma <- NULL
+bmind_test <- SingleCellExperiment(assays=list(logcounts =  deconv1$A[,1,])) # using the deconvolved space can not reconstruct the four state
+bmind_test$Group <- idCell$Fibroblast		 
+bmind_test <- runPCA(bmind_test)
+bmind_test <- runUMAP(bmind_test,dimred="PCA",n_dimred=10)
+bmind_test <- runTSNE(bmind_test,dimred="PCA",n_dimred=10)
+
 for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(enigma_trace,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma_trace$Group)),as.numeric(clust$cluster))
+clust <- cluster::pam(reducedDim(bmind_test,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(bmind_test$Group)),as.numeric(clust$cluster))
 print(ARI)
-ARI_enigma <- c(ARI_enigma,ARI)
 }
+
+
+enigma1 <- SingleCellExperiment(assays=list(logcounts =  egm1$X_k_norm[,,1]))
+enigma1$Group <- idCell$Fibroblast		 
+enigma1 <- runPCA(enigma1)
+enigma1 <- runUMAP(enigma1,dimred="PCA",n_dimred=10)
+enigma1 <- runTSNE(enigma1,dimred="PCA",n_dimred=10)
+
+ARI_enigma1 <- NULL
+for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
+clust <- cluster::pam(reducedDim(enigma1,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma1$Group)),as.numeric(clust$cluster))
+print(ARI)
+ARI_enigma1 <- c(ARI_enigma1,ARI)
+}
+
+
+enigma2 <- SingleCellExperiment(assays=list(logcounts =  egm2$X_k_norm[,,1]))
+enigma2$Group <- idCell$Fibroblast		 
+enigma2 <- runPCA(enigma2)
+enigma2 <- runUMAP(enigma2,dimred="PCA",n_dimred=10)
+enigma2 <- runTSNE(enigma2,dimred="PCA",n_dimred=10)
+
+ARI_enigma2 <- NULL
+for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
+clust <- cluster::pam(reducedDim(enigma2,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma2$Group)),as.numeric(clust$cluster))
+print(ARI)
+ARI_enigma2 <- c(ARI_enigma2,ARI)
+}
+
+
+
+enigma_trace1 <- SingleCellExperiment(assays=list(logcounts =  egm_trace1$X_k_norm[,,1]))
+enigma_trace1$Group <- idCell$Fibroblast		 
+enigma_trace1 <- runPCA(enigma_trace1)
+enigma_trace1 <- runUMAP(enigma_trace1,dimred="PCA",n_dimred=10)
+enigma_trace1 <- runTSNE(enigma_trace1,dimred="PCA",n_dimred=10)
+
+ARI_enigma_trace1 <- NULL
+for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
+clust <- cluster::pam(reducedDim(enigma_trace1,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma_trace1$Group)),as.numeric(clust$cluster))
+print(ARI)
+ARI_enigma_trace1 <- c(ARI_enigma_trace1,ARI)
+}
+
+
+enigma_trace2 <- SingleCellExperiment(assays=list(logcounts =  egm_trace2$X_k_norm[,,1]))
+enigma_trace2$Group <- idCell$Fibroblast		 
+enigma_trace2 <- runPCA(enigma_trace2)
+enigma_trace2 <- runUMAP(enigma_trace2,dimred="PCA",n_dimred=10)
+enigma_trace2 <- runTSNE(enigma_trace2,dimred="PCA",n_dimred=10)
+
+ARI_enigma_trace2 <- NULL
+for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
+clust <- cluster::pam(reducedDim(enigma_trace2,"PCA")[,1:i],4)
+ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(enigma_trace2$Group)),as.numeric(clust$cluster))
+print(ARI)
+ARI_enigma_trace2 <- c(ARI_enigma_trace2,ARI)
+}
+
+###################################################################
+### show the results
 
 color.legendF <- c(LowPDCtrl="orange", PD50="chartreuse4", Senes="magenta", HighPDCtrl="light blue")
 colmatF <- col2rgb(color.legendF) 
 color.legendF <- setNames(rgb(colmatF[1,], colmatF[2,], colmatF[3,], maxColorValue=255), names(color.legendF))
 allcolors <- c(color.legendF[enigma$Group])
-Y = reducedDim(enigma,"UMAP")
-png("enigma(umap).png",width=1500,height=1500,res=300)
+Y = reducedDim(enigma1,"UMAP")
+png("enigma1(umap).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	   
+Y = reducedDim(enigma2,"UMAP")
+png("enigma2(umap).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
 dev.off()	   
 
-Y = reducedDim(TCA,"UMAP")
-png("TCA(umap).png",width=1500,height=1500,res=300)
+
+Y = reducedDim(tca1,"UMAP")
+png("TCA1(umap).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()
+Y = reducedDim(tca2,"UMAP")
+png("TCA2(umap).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
 dev.off()
 
-Y = reducedDim(bmind,"UMAP")
-png("bMIND(umap).png",width=1500,height=1500,res=300)
+
+Y = reducedDim(bmind1,"UMAP")
+png("bMIND1(umap).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	
+Y = reducedDim(bmind2,"UMAP")
+png("bMIND2(umap).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
 dev.off()	
 
-Y = reducedDim(enigma_trace,"UMAP")
-png("enigma_trace(umap).png",width=1500,height=1500,res=300)
+Y = reducedDim(enigma_trace1,"UMAP")
+png("enigma_trace1(umap).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	
+Y = reducedDim(enigma_trace2,"UMAP")
+png("enigma_trace2(umap).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()
+
+
+Y = reducedDim(enigma1,"TSNE")
+png("enigma1(tsne).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	   
+Y = reducedDim(enigma2,"TSNE")
+png("enigma2(tsne).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	   
+
+
+Y = reducedDim(tca1,"TSNE")
+png("TCA1(tsne).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()
+Y = reducedDim(tca2,"TSNE")
+png("TCA2(tsne).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()
+
+
+Y = reducedDim(bmind1,"TSNE")
+png("bMIND1(tsne).png",width=1500,height=1500,res=300)
+plot(Y[,1], Y[,2], cex=1,
+     pch=21, 
+     col=allcolors,
+     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
+dev.off()	
+Y = reducedDim(bmind2,"TSNE")
+png("bMIND2(tsne).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
 dev.off()	
 
-Y = reducedDim(bulk_plot,"UMAP")
-png("bulk(umap).png",width=1500,height=1500,res=300)
+Y = reducedDim(enigma_trace1,"TSNE")
+png("enigma_trace1(tsne).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-Y = reducedDim(groundtruth,"UMAP")
-png("groundtruth(umap).png",width=1500,height=1500,res=300)
+dev.off()	
+Y = reducedDim(enigma_trace2,"TSNE")
+png("enigma_trace2(tsne).png",width=1500,height=1500,res=300)
 plot(Y[,1], Y[,2], cex=1,
      pch=21, 
      col=allcolors,
      bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
+dev.off()	
 
 png("celltype_color.png",width=1500,height=1500,res=300)
 plot(0,0,type="n", bty="n", axes=FALSE, xlab="", ylab="")
 legend(x=-1, y=1, legend=names(color.legendF), pch=21, cex=2.5, col=color.legendF, pt.bg=color.legendF, bty="n")
 dev.off()
 
-####################################################################################
-###plot the bulk to make comparsion
-###Using two baseline model to visualize 
-###Model1: Each bulk expression profile regress out the respect cell type fractions
-###Model2: TCA estimation
-###Model3: PseudoBulk
-
-###Model1: Regress out
-fra_single <- Frac$theta[,1]
-the <- (PseudoBulk %*% as.matrix(fra_single) - length(fra_single) * mean(fra_single) * rowMeans(PseudoBulk)) / (sum(fra_single^2) - length(fra_single)*mean(fra_single)^2)
-Exp1 <- PseudoBulk - as.matrix(the) %*% t(as.matrix(fra_single))
-
-###Model2: Sqrt
-Exp2 <- sqrt(PseudoBulk)
-
-###Model3: log
-Exp3 <- log2(PseudoBulk+1)
-
-###Model4: TCA estimation
-sf <- apply(Frac$theta,1,function(x){norm(x,"2")^2})
-Exp4 <- PseudoBulk %*% diag(Frac$theta[,1]/sf)
-
-model1 <- SingleCellExperiment(assays=list(logcounts = Exp1))
-model1$Group <- idCell$Fibroblast				 
-model1 <- runPCA(model1)
-model1 <- runUMAP(model1,dimred="PCA",n_dimred=10)
-ARI_model1 <- NULL
-for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(model1,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(model1$Group)),as.numeric(clust$cluster))
-print(ARI)
-ARI_model1 <- c(ARI_model1,ARI)
-}
-
-model2 <- SingleCellExperiment(assays=list(logcounts = Exp2))
-model2$Group <- idCell$Fibroblast				 
-model2 <- runPCA(model2)
-model2 <- runUMAP(model2,dimred="PCA",n_dimred=10)
-ARI_model2 <- NULL
-for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(model2,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(model2$Group)),as.numeric(clust$cluster))
-print(ARI)
-ARI_model2 <- c(ARI_model2,ARI)
-}
-
-model3 <- SingleCellExperiment(assays=list(logcounts = Exp3))
-model3$Group <- idCell$Fibroblast				 
-model3 <- runPCA(model3)
-model3 <- runUMAP(model3,dimred="PCA",n_dimred=10)
-ARI_model3 <- NULL
-for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(model3,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(model3$Group)),as.numeric(clust$cluster))
-print(ARI)
-ARI_model3 <- c(ARI_model3,ARI)
-}
-
-model4 <- SingleCellExperiment(assays=list(logcounts = Exp4))
-model4$Group <- idCell$Fibroblast				 
-model4 <- runPCA(model4)
-model4 <- runUMAP(model4,dimred="PCA",n_dimred=10)
-ARI_model4 <- NULL
-for(i in c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20)){
-clust <- cluster::pam(reducedDim(model4,"PCA")[,1:i],4)
-ARI <- mclust::adjustedRandIndex(as.numeric(as.factor(model4$Group)),as.numeric(clust$cluster))
-print(ARI)
-ARI_model4 <- c(ARI_model4,ARI)
-}
-
-Y = reducedDim(model1,"UMAP")
-png("model1(umap).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()	   
-
-Y = reducedDim(model2,"UMAP")
-png("model2(umap).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-Y = reducedDim(model3,"UMAP")
-png("model3(umap).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()	
-
-Y = reducedDim(model4,"UMAP")
-png("model4(umap).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()	
-########################################################################
-##plot the identity of different cell type
-model1$Group <- idCell$CellType3
-model2$Group <- idCell$CellType3
-model3$Group <- idCell$CellType3
-model4$Group <- idCell$CellType3
-bulk_plot$Group <- idCell$CellType3
-
-color.legendA <- c(Group1="red", Group2="blue")
-colmatA <- col2rgb(color.legendA) 
-color.legendA <- setNames(rgb(colmatA[1,], colmatA[2,], colmatA[3,], maxColorValue=255), names(color.legendA))
-allcolors <- c(color.legendA[model1$Group])
-Y = reducedDim(model1,"UMAP")
-png("model1(umap,celltype3).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-
-Y = reducedDim(model2,"UMAP")
-png("model2(umap,celltype3).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-Y = reducedDim(model3,"UMAP")
-png("model3(umap,celltype3).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-Y = reducedDim(model4,"UMAP")
-png("model4(umap,celltype3).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-Y = reducedDim(bulk_plot,"UMAP")
-png("bulk(umap,celltype3).png",width=1500,height=1500,res=300)
-plot(Y[,1], Y[,2], cex=1,
-     pch=21, 
-     col=allcolors,
-     bg=allcolors,xaxt="n",yaxt="n",xlab=NA,ylab=NA) 
-dev.off()
-
-
-png("celltype3_color.png",width=1500,height=1500,res=300)
-plot(0,0,type="n", bty="n", axes=FALSE, xlab="", ylab="")
-legend(x=-1, y=1, legend=names(color.legendA), pch=21, cex=2.5, col=color.legendA, pt.bg=color.legendA, bty="n")
-dev.off()
-#############################################################################
-###Fraction influence
-enigma$cell_type_fraction = Frac$theta[,1]
-p_enigma_umap <- plotUMAP(enigma, colour_by = "cell_type_fraction",point_size=3)
-
-png("enigma_frac_umap.png",width=1500,height=1500,res=300)
-p_enigma_umap
-dev.off()
-
-enigma_trace$cell_type_fraction = Frac$theta[,1]
-p_enigma_umap <- plotUMAP(enigma_trace, colour_by = "cell_type_fraction",point_size=3)
-
-png("enigma_frac_umap(trace).png",width=1500,height=1500,res=300)
-p_enigma_umap
-dev.off()
