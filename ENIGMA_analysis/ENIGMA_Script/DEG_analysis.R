@@ -20,7 +20,31 @@ precision <- function(lm.test,list){
   precision
 }
 
-DEG_test <- function(X_array,y,covariate=NULL){
+SLM <- function(O,y){
+	ncelltype <- dim(O)[2]
+	celltype_name <- dimnames(O)[[2]]
+	gene_name <- dimnames(O)[[1]]
+	pval_m <- qval_m <- NULL
+	for(ct in 1:ncelltype){
+	  P <- NULL
+	  mat <- O[,ct,]
+	  for(i in 1:nrow(mat)){
+	    pval <- summary(lm(mat[i,]~as.numeric(y)))$coefficients[2,4]
+	    P <- c(P,pval)
+	  }
+	  Q <- p.adjust(P,method="fdr")
+	  pval_m <- rbind(pval_m, P)
+	  qval_m <- rbind(qval_m, Q)
+	}
+	rownames(pval_m) <- rownames(qval_m) <- celltype_name
+	colnames(pval_m) <- colnames(qval_m) <- gene_name
+	res <- list()
+	res$pval <- pval_m
+	res$qval <- qval_m
+	res
+}
+
+DEG_test <- function(X_array,y,covariate=NULL,FDR_control=TRUE){
     O = array(0,
                   dim = c( dim(X_array)[1],
                            dim(X_array)[3],
@@ -33,7 +57,8 @@ DEG_test <- function(X_array,y,covariate=NULL){
 	  O[,i,] <- X_array[,,i]
 	}
 	###Using ANOVA+glm model to evaluate prediction performance
-	result <- MIND::test(O,y,covariate)
+	if(FDR_control) result <- MIND::test(O,y,covariate)
+	if(!FDR_control) result <- SLM(O,y)
 	result
 }
 
@@ -112,7 +137,8 @@ DePRCcalculator <- function(qval,X_array,DEG_list,y,n_sample,reshape=NULL){
    )
 }
 
-DEG_test1 <- function(X_array,y,theta,method = NULL,n_sample,DEG_list,qval=FALSE){
+#To perform the analysis in main figure, simply set FDR_method = FALSE
+DEG_test1 <- function(X_array,y,theta,method = NULL,n_sample,DEG_list,qval=FALSE,FDR_method=TRUE){
 	##calculate Sensitivity for each methods
 	
 	method_list <- c("enigma","bmind","TCA")
@@ -167,7 +193,7 @@ DEG_test1 <- function(X_array,y,theta,method = NULL,n_sample,DEG_list,qval=FALSE
 		}
 		X_array <- X_k_norm
 	}
-	result <- DEG_test(X_array,y)
+	result <- DEG_test(X_array,y,FDR=FDR_method)
 	
 	###Evaluation
 	if(qval){Tab <- result$qval}else{Tab <- result$pval}
@@ -179,8 +205,8 @@ DEG_test1 <- function(X_array,y,theta,method = NULL,n_sample,DEG_list,qval=FALSE
 }
 #####calculate two cases of ENIGMA
 ## After ANOVA test (improved precision)
-
-DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
+#To perform the analysis in main figure, simply set FDR_method = FALSE
+DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list,FDR_method = TRUE){
 	O = array(0,
 			  dim = c( dim(bMIND_result)[1],
 					   dim(bMIND_result)[3],
@@ -206,8 +232,8 @@ DEG_test2 <- function(ENIGMA_result,bMIND_result,y,theta,DEG_list){
 		X_k_norm[,,k] <- exp.norm
 	}
 	ENIGMA_result <- X_k_norm
-	result_enigma <- DEG_test(ENIGMA_result,y)
-	result_mind <- DEG_test(bMIND_result,y)
+	result_enigma <- DEG_test(ENIGMA_result,y,FDR=FDR_method)
+	result_mind <- DEG_test(bMIND_result,y,FDR=FDR_method)
 	
 	##Evaluate ENIGMA and bMIND
 	
