@@ -55,5 +55,5 @@ Both scripts could be downloaded through following links:
 #####  DataSets: 
 1. [Datasets for DEG analysis](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/DEG_example_data)
 2. [Datasets for cell state identification](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/CellStateIdentification)
-3. [Datasets for sample/gene-level correlation analysis](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Data/CSE_correlation)
+3. [Datasets for sample/gene-level correlation analysis](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/CSE_benchmark)
 4. [Inferred CSE of NSCLC patients (CIBERSORTx, ISOpure, DeMixT)](https://github.com/WWXkenmo/ENIGMA/tree/main/ENIGMA_analysis/Data/NSCLC_data_file)
