@@ -7,7 +7,7 @@
 
 ### load data
 setwd("/path/to/Data/")
-gt=readRDS("single_celltyoe_500s_fivecellty.rds")
+gt=readRDS("single_celltype_500s_fivecellty.rds")
 Bulk=readRDS("bulk_var_500s_fivecellty.rds")
 Bulk=as.matrix(Bulk)
 Frac=readRDS("Fra_Simulate_same10x_rmbe_500s_fivecellty.rds")
