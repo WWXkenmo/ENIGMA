@@ -17,7 +17,9 @@ Both scripts could be downloaded through following links:
 
 ## Code for main text
 ### Simulation analysis
-* [Using tumor scRNA-seq data to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
+* [Using PBMC scRNA-seq data of COVID19 patients to simulate pseudo-bulk sample and perform deconvolution](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(Seq-Well%20scRNA-seq).R)
+
+  [Calibrate RMSE function](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/RMSE_function.R) 
 
 * [Deconvolve NSCLC datasets with scRNA-seq datasets as reference (Fig2c)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NSCLC_test.R)
 
