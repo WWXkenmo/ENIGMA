@@ -203,8 +203,8 @@ for(ct in colnames(profile)){
   celltype <- c(celltype,rep(ct,length(cor_enigma_t4)))
 }
 
-dat <- data.frame(method=c(rep("ENIGMA-trace(sqrt)",length(HiDe_t3)),
-                           rep("ENIGMA-trace(log)",length(HiDe_t4))),
+dat <- data.frame(method=c(rep("ENIGMA-trace(log)",length(HiDe_t3)),
+                           rep("ENIGMA-trace(sqrt)",length(HiDe_t4))),
                   performance=c(HiDe_t3,
                                 HiDe_t4),
                   celltype=c(rep(celltype,2)))
