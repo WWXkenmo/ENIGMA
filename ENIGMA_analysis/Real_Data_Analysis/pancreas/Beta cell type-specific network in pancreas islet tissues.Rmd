@@ -173,7 +173,8 @@ sig <- as.matrix(log2(tmp_pancreas$cell_type1+1))
 colnames(sig) <- paste0("cellType",1:5)
 colnames(Fra_pancreas$theta) <- colnames(sig)
 G <- log2(tmp_pancreas$bulk+1)
-#pancreas_deconv = MIND::bMIND2(G, frac = Fra_pancreas$theta, profile=sig,  ncore = 5, noRE = F) ### this step would be costed for a long time, to reproduce our results, user could using following code
+#pancreas_deconv = bMIND(G, frac = Fra_pancreas$theta, profile=sig,  ncore = 5)
+### this step would be costed for a long time, to reproduce our results, user could using following code
 pancreas_deconv = readRDS("/mnt/data1/weixu/HiDe/revised/reproduce_pancreas/deconv_pancreas.rds")
 
 Exp <- pancreas_deconv$A[,3,sample]
