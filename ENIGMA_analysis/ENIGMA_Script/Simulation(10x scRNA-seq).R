@@ -10,13 +10,13 @@ setwd("/path/to/Data/")
 gt=readRDS("single_celltype_500s_fivecellty.rds")
 Bulk=readRDS("bulk_var_500s_fivecellty.rds")
 Bulk=as.matrix(Bulk)
-Frac=readRDS("Fra_Simulate_same10x_rmbe_500s_fivecellty.rds")
-ref=readRDS("ref_same10x_rmbe_500s.rds")
+ref=readRDS("ENIGMA/ENIGMA_analysis/Data/mutilPlatforms/ref_same10x_rmbe_500s.rds")
 ref=ref$majorType
 inde=c("B","Mono","T_CD8","T_CD4","NK")
 ref=ref[,inde]
 profile=ref
-
+Frac<- get_proportion(Bulk, profile)
+# Or Frac=readRDS("ENIGMA/ENIGMA_analysis/Data/mutilPlatforms/Fra_Simulate_same10x_rmbe_500s_fivecellty.rds")
 #### 1.Caculate results
 ## 1.1 bMIND results
 library(MIND)
