@@ -6,6 +6,7 @@
 #### 4.Plot
 
 ### load data
+#note:The detailed data generation process is in the Simulation(mutilPlatforms)
 setwd("/path/to/Data/")
 gt=readRDS("single_celltype_500s_fivecellty.rds")
 Bulk=readRDS("bulk_var_500s_fivecellty.rds")
