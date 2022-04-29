@@ -163,13 +163,13 @@ sig <- as.matrix(log2(tmp_ra$type+1))
 colnames(sig) <- paste0("cellType",1:4)
 colnames(Fra_ra$theta) <- colnames(sig)
 G <- log2(exprs(bulk_ra_vs_oa)[rownames(tmp_ra$type),]+1)
-deconv = bMIND2(G, frac = Fra_ra$theta, profile=sig,  ncore = 5, noRE = F)
+deconv = bMIND(G, frac = Fra_ra$theta, profile=sig,  ncore = 5, noRE = F)
 
 sig <- as.matrix(ref_ra)
 colnames(sig) <- paste0("cellType",1:4)
 colnames(Fra_ra2$theta) <- colnames(sig)
 G <- log2(exprs(bulk_ra_vs_oa)[rownames(ref_ra),]+1)
-deconv2 = bMIND2(G, frac = Fra_ra2$theta, profile=sig,  ncore = 5, noRE = F)
+deconv2 = bMIND(G, frac = Fra_ra2$theta, profile=sig,  ncore = 5, noRE = F)
 				
 
 ##Running TCA
