@@ -10,13 +10,14 @@ setwd("/path/to/Data/")
 gt=readRDS("single_celltype_500s_fivecellty.rds")
 Bulk=readRDS(".bulk_var_500s_fivecellty.rds")
 Bulk=as.matrix(Bulk)
-Frac=readRDS("Fra_Simulate_seqwell_rmbe_500s_fivecellty.rds")
-ref_seqwell=readRDS("ref_seqwell_rmbe_500s.rds")
+
+ref_seqwell=readRDS("ENIGMA/ENIGMA_analysis/Data/mutilPlatforms/ref_seqwell_rmbe_500s.rds")
 ref=ref_seqwell$cell.type.coarse
 inde=c("B","Mono","T_CD8","T_CD4","NK")
 ref=ref[,inde]
 profile=ref
-
+Frac<- get_proportion(Bulk, profile)
+# Or Frac=readRDS("ENIGMA/ENIGMA_analysis/Data/mutilPlatforms/Fra_Simulate_seqwell_rmbe_500s_fivecellty.rds")
 #### 1.Caculate results
 ## 1.1 bMIND results
 library(MIND)
@@ -202,12 +203,12 @@ for(ct in colnames(profile)){
   celltype <- c(celltype,rep(ct,length(cor_enigma_t4)))
 }
 
-dat <- data.frame(method=c(rep("ENIGMA-trace-a(sqrt)",length(HiDe_t3)),
-                           rep("ENIGMA-trace-a(log)",length(HiDe_t4))),
+dat <- data.frame(method=c(rep("ENIGMA-trace(sqrt)",length(HiDe_t3)),
+                           rep("ENIGMA-trace(log)",length(HiDe_t4))),
                   performance=c(HiDe_t3,
                                 HiDe_t4),
                   celltype=c(rep(celltype,2)))
-save(dat,file="./cor_ENIGAMA_trace_gene_admm.Rdata")
+save(dat,file="./cor_ENIGAMA_trace_gene.Rdata")
 
 ## 2.2 Correlation per sample
 # 2.2.1 TCA
@@ -332,12 +333,12 @@ for(ct in colnames(profile)){
   HiDe_t4 <- c(HiDe_t4,cor_enigma_t4)
   celltype <- c(celltype,rep(ct,length(cor_enigma_t4)))
 }
-dat <- data.frame(method=c(rep("ENIGMA-trace-a(log)",length(HiDe_t3)),
-                           rep("ENIGMA-trace-a(sqrt)",length(HiDe_t4))),
+dat <- data.frame(method=c(rep("ENIGMA-trace(log)",length(HiDe_t3)),
+                           rep("ENIGMA-trace(sqrt)",length(HiDe_t4))),
                   performance=c(HiDe_t3,
                                 HiDe_t4),
                   celltype=c(rep(celltype,2)))
-save(dat,file="./cor_ENIGAMA_trace_sample_admm.Rdata")
+save(dat,file="./cor_ENIGAMA_trace_sample.Rdata")
 
 
 #### 3.Caculate RMSE
@@ -431,7 +432,7 @@ p=ggplot(data3, aes(x=celltype, y=performance, fill=Method)) +
   theme(axis.title.x = element_blank(), axis.text.x = element_blank()) +
   theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))
 
-png("./results_figs/fig2_cor_sample_ENIGMA09.png",res=300,height=1000,width=2300)
+png("./results_figs/fig2_cor_sample_best2.png",res=300,height=1000,width=2300)
 p+scale_fill_lancet(alpha=0.9)
 dev.off()
 
