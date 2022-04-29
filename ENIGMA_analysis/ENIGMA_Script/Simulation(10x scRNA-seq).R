@@ -430,7 +430,7 @@ p=ggplot(data3, aes(x=celltype, y=performance, fill=Method)) +
         axis.title.y = element_text(size=14),axis.text.y = element_text(size=12))+
   theme(axis.title.x = element_blank(), axis.text.x = element_blank()) +
   theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))
-png("./result_figs/fig2_cor_sample_ENIGMA09.png",res=300,height=1000,width=2300)
+png("./result_figs/fig2_cor_sample_best2.png",res=300,height=1000,width=2300)
 p+scale_fill_lancet(alpha=0.9)
 dev.off()
 
@@ -479,7 +479,7 @@ p=ggplot(data2, aes(x=celltype, y=performance, fill=Method)) +
   theme(axis.title.x = element_blank(), axis.text.x = element_blank()) +
   theme(panel.border = element_rect(size = 0.3, linetype = "dashed", fill = NA))
 
-png("./result_figs/fig2_rmse_gene_ENIGMA_trace2.png",res=300,height=1000,width=1900)
+png("./result_figs/fig2_rmse_gene_best2.png",res=300,height=1000,width=2300)
 p+scale_fill_npg(alpha=0.9)
 dev.off()
 
