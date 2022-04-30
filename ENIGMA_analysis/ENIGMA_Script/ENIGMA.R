@@ -722,7 +722,6 @@ cell_deconvolve <- function(X, theta, R, alpha=0.5, tao_k=0.005,beta=0.5,epsilon
 	loss_history = loss
 	)
 	if(Normalize) res$X_k_norm = X_k_norm
-	if(alpha>=0.9) res$X_k_norm = res$X_k
 	return( res )
 }
 
@@ -1051,7 +1050,6 @@ cell_deconvolve_trace <- function(O, theta, R, alpha=0.5,beta=5,tao_k=1,gamma=NU
     res$loss_history <- loss
 	res$theta <- theta
     if(Normalize) res$X_k_norm <- X_k_norm
-    if(alpha>=0.9) res$X_k_norm = res$X_k
     res
 }
 
