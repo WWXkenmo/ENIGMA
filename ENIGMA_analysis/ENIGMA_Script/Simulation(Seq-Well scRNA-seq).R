@@ -4,7 +4,7 @@
 #### 2.Caculate Correlation
 #### 3.Caculate RMSE
 #### 4.Plot
-
+#### Note: In our algorithm, when alpha >= 0.9 or reference profile matrix is generated from S-mode batch effect correction, we don't need to normalize so use the raw CSE matrix (X_k) 
 ### load data
 #note:The detailed data generation process is in the Simulation(mutilPlatforms)
 setwd("/path/to/Data/")
