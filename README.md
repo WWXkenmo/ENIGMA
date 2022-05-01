@@ -32,6 +32,15 @@ DEG = FindCSE_DEG(object,y)
 # y: a binary phenotype vector represents case(1) and control(0)
 ```
 please refer to the [CTS-DE document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Cell-Type-Specific-Differential-Expression-Gene-Test.pdf) of detailed guidence of CTS-DE analysis with ENIGMA. [link to example datasets](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/exampleDatasets.Rdata)
+
+2. Build GeneSigTest function to filter the genes
+ENIGMA now provide a function to help user to identify the genes which could be accurately estimated through our algorithm.
+```
+res = GeneSigTest(object,filtering=TRUE)
+head(res$call)
+head(res$pval)
+egm = res$egm # the filtered ENIGMA object
+```
 ### a simple implementation in python (pyENIGMA)
 we have implement the ENIGMA algorithm in python for those people who want to use ENIGMA in python version
 
