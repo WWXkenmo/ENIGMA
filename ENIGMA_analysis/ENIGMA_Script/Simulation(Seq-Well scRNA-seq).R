@@ -22,7 +22,37 @@ Frac<- get_proportion(Bulk, profile)
 #### 1.Caculate results
 ## 1.1 bMIND results
 library(MIND)
-source("/mnt/data2/zhouxl/ENIGMA2/bMIND.R")
+## Remove log2 processing in bMIND function
+bMIND=function (bulk, frac = NULL, sample_id = NULL, ncore = NULL, 
+          profile = NULL, covariance = NULL, y = NULL, covariate = NULL, 
+          nu = 50, V_fe = NULL, nitt = 1300, burnin = 300, thin = 1, 
+          frac_method = NULL, sc_count = NULL, sc_meta = NULL, signature = NULL, 
+          signature_case = NULL, case_bulk = NULL) 
+{
+  if (is.null(frac)) 
+    est_frac = TRUE
+  else est_frac = FALSE
+  if (est_frac) 
+    frac = est_frac_sc(bulk, sc_count, signature, signature_case, 
+                       frac_method, case_bulk, sc_meta)
+  if (is.null(ncore)) 
+    ncore = detectCores()
+  if (is.null(sample_id)) 
+    sample_id = rownames(frac)
+  # if (max(bulk) > 50) ## Remove log2 processing
+  #   bulk = log2(apply(bulk, 2, function(x) x/sum(x) * 1e+06) +1)
+  cts_est = bmind(bulk, frac, sample_id, ncore, profile, covariance, 
+                  nu, nitt, burnin, thin, V_fe)
+  if (est_frac) 
+    cts_est$frac = frac
+  if (is.null(y)) 
+    return(cts_est)
+  else {
+    bmind_test = test(cts_est$A, y, covariate)
+    return((c(cts_est, bmind_test)))
+  }
+}
+
 deconv3 = bMIND(sqrt(Bulk),ncore = 7, frac = Frac$theta, profile = as.matrix(sqrt(profile)))
 deconv4 = bMIND(log2(Bulk+1),ncore = 7, frac = Frac$theta, profile = as.matrix(log2(profile+1)))
 save(deconv3,deconv4,file="./bMIND_seqwell_rmlog2.Rdata")
@@ -39,7 +69,7 @@ Z_hat3 <- tensor(X = as.matrix(log2(Bulk+1)), tca.mdl)
 save(Z_hat2,Z_hat3,file="./TCA_seqwell.Rdata")
 
 ## 1.3 ENIGMA results
-source("/mnt/data2/zhouxl/ENIGMA/ENIGMA2.R")
+source("ENIGMA.R")
 alpha=0.9
 res_alg_all3 <- cell_deconvolve(X=sqrt(Bulk),
                                 theta=Frac$theta,
