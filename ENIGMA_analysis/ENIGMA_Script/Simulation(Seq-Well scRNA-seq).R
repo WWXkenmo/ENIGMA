@@ -22,7 +22,7 @@ Frac<- get_proportion(Bulk, profile)
 #### 1.Caculate results
 ## 1.1 bMIND results
 library(MIND)
-## Remove log2 processing in bMIND function
+## Remove the log2 preprocessing inside bMIND function
 bMIND=function (bulk, frac = NULL, sample_id = NULL, ncore = NULL, 
           profile = NULL, covariance = NULL, y = NULL, covariate = NULL, 
           nu = 50, V_fe = NULL, nitt = 1300, burnin = 300, thin = 1, 
