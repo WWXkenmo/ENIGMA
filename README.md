@@ -24,6 +24,10 @@ devtools::install_github("WWXKenmo/ENIGMA_test")
 
 ### When user need to integrate all samples to perform calculation (e.g. Differential Expression Gene Analysis, Gene Co-expression Network Inference, Sample Clustering Analysis), please used normalized CSE profile
 ## News
+### release v1.6
+updated stop criteria
+<img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/movie_pca.gif" width="350" height="350"/>
+
 ### release v1.5
 1. Build FindCSE_DEG function to perform CTS-DEG analysis
 ```
