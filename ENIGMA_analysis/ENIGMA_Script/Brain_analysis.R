@@ -4,6 +4,7 @@ gc()
 setwd("/path/to/Data/ENIGMA_documents")
 load("/path/to/Data/brain_data.Rdata")
 source("/path/to/Data/ENIGMA.R")
+source("/path/to/Data/mean_fun.R")
 
 library(MIND)
 library(Biobase)
@@ -11,6 +12,8 @@ library(Seurat)
 library(MASS)
 library(Biobase)
 library(TCA)
+library(umap)
+library(ggpubr)
 
 ################################## Comparison between multiple methods ###########################
 ##################################
@@ -219,6 +222,121 @@ ggplot(cor_alpha,aes(x=alpha,y=as.numeric(g),color=celltype))+
         panel.grid=element_blank())+
   labs(y="Correlation per gene",color="Cell type")+ylim(c(0,max(cor_alpha$g)+0.2))+
   scale_color_npg(alpha=0.9)+scale_x_continuous(limits = c(0.1,0.9),breaks = seq(0,0.9,0.1))#+theme(legend.position = c(0.85,0.25))
+
+
+
+
+
+################################## Comparison between different parameters (alpha) ###########################
+single_celltype=NULL
+for (i in colnames(profile)) {
+  single_celltype[[i]]=CSE_array[i,,]
+  single_celltype[[i]]=single_celltype[[i]][rownames(Bulk),colnames(Bulk)]
+}
+
+Fra_Simulate <- get_proportion(Bulk, profile)
+
+## trace
+alpha.v <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
+ENIGMA_brain= NULL
+for(k in 1:length(alpha.v)){
+  alpha<-alpha.v[k]
+  print(paste0("alpha=",alpha))
+  ENIGMA_trace.v <- cell_deconvolve_trace(O = as.matrix(Bulk),
+                                          theta=Fra_Simulate$theta,
+                                          R=profile,pre.process="log",
+                                          alpha=alpha,Normalize=F,epsilon=0.0001,Norm.method = "frac",
+                                          verbose=T)
+  ENIGMA_brain[[k]]=ENIGMA_trace.v
+}
+
+enigma.mean=NULL
+for (i in 1:length(ENIGMA_brain)) {
+  ENIGMA_trace.v = ENIGMA_brain[[i]]
+  alpha<-alpha.v[i]
+  
+  enigma.mean1=mean_fun(cell_decon_result=ENIGMA_trace.v,Fraction=Fra_Simulate$theta,groundtrue=single_celltype)
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean1)=paste(alpha_name,rownames(enigma.mean1),sep="-")
+  enigma.mean=rbind(enigma.mean,enigma.mean1)
+}
+saveRDS(enigma.mean,"./enigma.mean.rds")
+
+## L2
+ENIGMA_brain_l2= NULL
+enigma.mean=NULL
+for(k in 1:length(alpha.v)){
+  alpha<-alpha.v[k]
+  print(paste0("alpha=",alpha))
+  ENIGMA_trace.v <- cell_deconvolve(X = Bulk,
+                                        theta=Fra_Simulate$theta,
+                                        R=profile,pre.process="log",
+                                        alpha=alpha,Normalize=F,Norm.method = "frac",
+                                        verbose=T)
+  ENIGMA_brain_l2[[k]]=ENIGMA_trace.v
+  
+  enigma.mean1=mean_fun(cell_decon_result=ENIGMA_trace.v,Fraction=Fra_Simulate$theta,groundtrue=single_celltype)
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean1)=paste(alpha_name,rownames(enigma.mean1),sep="-")
+  enigma.mean=rbind(enigma.mean,enigma.mean1)
+}
+saveRDS(enigma.mean,"./enigma.mean_l2.rds")
+
+
+##### Supplementary Figure S2b
+enigma.mean=readRDS("./enigma.mean.rds") # or enigma.mean=readRDS("./enigma.mean_l2.rds")
+cor_alpha=enigma.mean
+cor_alpha=cor_alpha %>% rownames_to_column("name")
+cor_alpha$celltype=sapply(strsplit(cor_alpha$name,"-"),function(x){x[[2]]})
+cor_alpha$alpha=rep(alpha.v[1:length(ENIGMA_brain_l2)],each=5)
+
+ggplot(cor_alpha,aes(x=alpha,y=as.numeric(s),color=celltype))+
+  geom_point()+
+  geom_line()+theme_bw()+
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=14),
+        panel.grid=element_blank())+
+  labs(y="Correlation per sample",color="Cell type")+ylim(c(0,max(cor_alpha$s)+0.2))+
+  scale_color_npg(alpha=0.9)+scale_x_continuous(limits = c(0.1,0.9),breaks = seq(0,0.9,0.1))#+theme(legend.position = c(0.85,0.25))
+
+ggplot(cor_alpha,aes(x=alpha,y=as.numeric(g),color=celltype))+
+  geom_point()+
+  geom_line()+theme_bw()+
+  theme(axis.title = element_text(size=16),
+        axis.text = element_text(size=14),
+        legend.text = element_text(size=13),
+        legend.title = element_text(size=14),
+        panel.grid=element_blank())+
+  labs(y="Correlation per gene",color="Cell type")+ylim(c(0,max(cor_alpha$g)+0.2))+
+  scale_color_npg(alpha=0.9)+scale_x_continuous(limits = c(0.1,0.9),breaks = seq(0,0.9,0.1))#+theme(legend.position = c(0.85,0.25))
+
+
+##### UMAP [Supplementary Figure S2a]
+Frac <- Fra_Simulate
+## L2
+res_alg_all <- cell_deconvolve(X=Bulk,
+                               theta=Frac$theta,
+                               R=profile,
+                               epsilon=0.001,
+                               alpha=0.1,pre.process="sqrt",
+                               beta=0.5,tao_k=0.01,max.iter=1000,verbose=TRUE,Normalize=TRUE,Norm.method = "frac")
+umap_tr = umap(apply(res_alg_all$X_k, 1, as.vector))
+ggscatter(data.frame(umap = umap_tr$layout, cell = rep(colnames(profile), each = ncol(Bulk))), x = "umap.1", y = "umap.2", color = "cell", size = 1) + ggtitle('Ground truth')
+
+## trace
+res_alg_trace <- cell_deconvolve_trace(O=Bulk,
+                                       theta=Frac$theta,
+                                       R=profile,
+                                       epsilon=0.001,
+                                       alpha=0.1,pre.process = "sqrt",
+                                       verbose=TRUE,max.iter = 100,Norm.method = "frac")
+umap_tr = umap(apply(res_alg_trace$X_k, 1, as.vector))
+ggscatter(data.frame(umap = umap_tr$layout, cell = rep(colnames(profile), each = ncol(Bulk))), x = "umap.1", y = "umap.2", color = "cell", size = 1) + ggtitle('Ground truth')
+
+
+
 
 
 
