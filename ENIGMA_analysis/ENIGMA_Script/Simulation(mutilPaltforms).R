@@ -126,7 +126,6 @@ bulk=do.call(cbind,bulk_r)#genes x 70sampels
 #remove the fresh pbmc sample which is sequencing based 3'-end 10X 
 bulk=bulk[,which(colnames(bulk)!="S-S001-2")]
 groundTrue_r=groundTrue_r[which(names(groundTrue_r)!="S-S001-2")]
-
 freshpbmc69samples=list(bulk=bulk,groundTrue=groundTrue_r)
 saveRDS(freshpbmc69samples,"./freshpbmc69samples_sample500s_fivecellty.rds")
 
@@ -134,7 +133,60 @@ saveRDS(freshpbmc69samples,"./freshpbmc69samples_sample500s_fivecellty.rds")
 ## The 10x 3'-end sequencing samples are removed, leaving 82 10x 5'-end sequencing samples, 
 ## 69 samples for simulating bulk and groundtrue data, and 13 samples for simulating reference data on the same platform(1.2.6 ref six: same 10x 5'-end).
 
+#################################### Pseudo-bulk #########################
+###### remove genes which var < 10^(-8)
+bulk_var=bulk %>% as.matrix(.)%>% apply(.,1,var)
+bulk_var=bulk_var[bulk_var>10^(-8)]
+bulk_var=bulk[rownames(bulk) %in% names(bulk_var),]
+
+#overlap genes
+seqwell=readRDS("/path/to/Data/seqwell_ref.rds")
+sixplat=readRDS("/path/to/Data/pbmc_ref.rds")
+geneset=Reduce(intersect,list(r1=rownames(seqwell@assays$RNA),
+                              r2=rownames(sixplat@assays$RNA),
+                              r3=rownames(bulk_var)))
+bulk_var=bulk_var[geneset,]
+saveRDS(bulk_var,"./bulk_var_500s_fivecellty.rds")
+
+################################### Ground True ########################
+groundTrue_r=freshpbmc69samples$groundTrue
+#All cell types covered by sampling
+celltype=NULL
+for (i in 1:length(groundTrue_r)) {
+  celltype=unique(c(celltype,colnames(groundTrue_r[[i]])))
+}
+
+#Complete five cell types
+for (i in 1:length(groundTrue_r)){
+  df=setdiff(celltype,colnames(groundTrue_r[[i]]))
+  dfdata=matrix(0,ncol=length(df),nrow=nrow(groundTrue_r[[i]])) %>% as.data.frame()
+  colnames(dfdata)=df
+  groundTrue_r[[i]]=cbind(groundTrue_r[[i]],dfdata)
+}
+
+for (i in names(groundTrue_r)) {
+  groundTrue_r[[i]]=groundTrue_r[[i]][geneset,]
+  groundTrue_r[[i]]=groundTrue_r[[i]][,inde]
+}
+
+single_celltype=NULL
+for (j in colnames(groundTrue_r[[1]])) {
+  single_celltype[[j]]=do.call(cbind,lapply(groundTrue_r,function(x){
+    x[j]
+  }))
+  colnames(single_celltype[[j]])=names(groundTrue_r)
+}
+saveRDS(single_celltype,"./single_celltype_500s_fivecellty.rds")
+
+##Please note
+#The above code is the reference of the data preparation part (the user needs to download the original data by himself). 
+#The user can directly reproduce the results in our manuscript, according to the following code.
+
 ###########################1.2 simulate reference data
+single_celltype=readRDS("path/to/Dath/single_celltype_500s_fivecellty.rds")
+bulk_var=readRDS("path/to/Data/bulk_var_500s_fivecellty.rds")
+bulk_var=as.matrix(bulk_var)
+
 #######1.2.1 ref one:seqwell platform
 ##Data could be downloaded from https://hosted-matrices-prod.s3-us-west-2.amazonaws.com/Single_cell_atlas_of_peripheral_immune_response_to_SARS_CoV_2_infection-25/blish_covid.seu.rds
 seqwell=readRDS("./seq_well.obj.rds")
@@ -153,10 +205,10 @@ pbmc.markers2 %>%
   group_by(cluster) %>%  
   top_n(n = 500, wt = avg_log2FC) -> top500_seqwell
 
-seqwell_sub_eset=ExpressionSet(as.matrix(GetAssayData(seqwell_sub)))
+seqwell_sub_eset=ExpressionSet(as.matrix(GetAssayData(seqwell_sub)[top500_seqwell$gene %>% unique(),]))
 pData(seqwell_sub_eset)=metadata
 ##remove batch effect
-ref_seqwell_rmbe=remove_batch_effect(ExpressionSet(bulk_var),seqwell_sub_eset,"cell.type.coarse", n_pseudo_bulk=5000,ncores = 4)
+ref_seqwell_rmbe=remove_batch_effect(ExpressionSet(bulk_var),seqwell_sub_eset,"cell.type.coarse", n_pseudo_bulk=5000)
 saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe_500s.rds")
 
 #######
@@ -283,54 +335,6 @@ top500=list(top500_drop,top500_indrop,top500_seqwell,top500_smart,top500_x10,top
 names(top500)=c('top500_drop','top500_indrop','top500_seqwell','top500_smart','top500_x10','top500_same10x')
 saveRDS(top500,"./top500_markergenes.rds")
 
-#################################### Pseudo-bulk #########################
-###### remove genes which var < 10^(-8)
-bulk_var=bulk %>% as.matrix(.)%>% apply(.,1,var)
-bulk_var=bulk_var[bulk_var>10^(-8)]
-bulk_var=bulk[rownames(bulk) %in% names(bulk_var),]
-
-#overlap genes
-seqwell=readRDS("/path/to/Data/seqwell_ref.rds")
-sixplat=readRDS("/path/to/Data/pbmc_ref.rds")
-geneset=Reduce(intersect,list(r1=rownames(seqwell@assays$RNA),
-                              r2=rownames(sixplat@assays$RNA),
-                              r3=rownames(bulk_var)))
-bulk_var=bulk_var[geneset,]
-saveRDS(bulk_var,"./bulk_var_500s_fivecellty.rds")
-
-################################### Ground True ########################
-groundTrue_r=freshpbmc69samples$groundTrue
-#All cell types covered by sampling
-celltype=NULL
-for (i in 1:length(groundTrue_r)) {
-  celltype=unique(c(celltype,colnames(groundTrue_r[[i]])))
-}
-
-#Complete five cell types
-for (i in 1:length(groundTrue_r)){
-  df=setdiff(celltype,colnames(groundTrue_r[[i]]))
-  dfdata=matrix(0,ncol=length(df),nrow=nrow(groundTrue_r[[i]])) %>% as.data.frame()
-  colnames(dfdata)=df
-  groundTrue_r[[i]]=cbind(groundTrue_r[[i]],dfdata)
-}
-
-for (i in names(groundTrue_r)) {
-  groundTrue_r[[i]]=groundTrue_r[[i]][geneset,]
-  groundTrue_r[[i]]=groundTrue_r[[i]][,inde]
-}
-
-single_celltype=NULL
-for (j in colnames(groundTrue_r[[1]])) {
-  single_celltype[[j]]=do.call(cbind,lapply(groundTrue_r,function(x){
-    x[j]
-  }))
-  colnames(single_celltype[[j]])=names(groundTrue_r)
-}
-saveRDS(single_celltype,"./single_celltype_500s_fivecellty.rds")
-
-##Please note
-#The above code is the reference of the data preparation part (the user needs to download the original data by himself). 
-#The user can directly reproduce the results in our manuscript, according to the following code.
 
 #################################################################
 ##########      2. L2-norm 
