@@ -337,142 +337,9 @@ saveRDS(top500,"./top500_markergenes.rds")
 
 
 #################################################################
-##########      2. L2-norm 
+##########      2. ENIGMA
 #################################################################
 ##Datasets are provided in /ENIGMA_analysis/Data/mutilPlatforms/
-single_celltype=readRDS("/path/to/Data/single_celltype_500s_fivecellty.rds")
-bulk_var=readRDS("/path/to/Data/bulk_var_500s_fivecellty.rds")
-
-ref_seqwell=readRDS("/path/to/Data/ref_seqwell_rmbe_500s.rds")
-ref_drops=readRDS("/path/to/Data/ref_drop_rmbe_500s.rds")
-ref_10x=readRDS("/path/to/Data/ref_10x_rmbe_500s.rds")
-ref_indrop=readRDS("/path/to/Data/ref_indrop_rmbe_500s.rds")
-ref_smart=readRDS("/path/to/Data/ref_smart_rmbe_500s.rds")
-ref_same10x=readRDS("/path/to/Data/ref_same10x_rmbe_500s.rds")
-
-inde=c("B","Mono","T_CD8","T_CD4","NK")
-ref_seqwell=ref_seqwell$cell.type.coarse
-ref_drops=ref_drops$CellType_group
-ref_10x=ref_10x$CellType_group
-ref_smart=ref_smart$CellType_group
-ref_indrop=ref_indrop$CellType_group
-ref_same10x=ref_same10x$majorType
-
-ref_seqwell=ref_seqwell[,inde]
-ref_drops=ref_drops[,inde]
-ref_10x=ref_10x[,inde]
-ref_smart=ref_smart[,inde]
-ref_indrop=ref_indrop[,inde]
-ref_same10x=ref_same10x[,inde]
-
-Fra_Simulate_10x <- get_proportion(bulk_var, ref_10x)
-Fra_Simulate_smart <- get_proportion(bulk_var, ref_smart)
-Fra_Simulate_seqwell<- get_proportion(bulk_var, ref_seqwell)
-Fra_Simulate_drops <- get_proportion(bulk_var, ref_drops)
-Fra_Simulate_indrop <- get_proportion(bulk_var, ref_indrop)
-Fra_Simulate_same10x <- get_proportion(bulk_var, ref_same10x)
-
-alpha.v <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
-enigma.mean.10x<-enigma.mean.seqwell<-enigma.mean.smart<-enigma.mean.indrop<-enigma.mean.drops<-enigma.mean.same10x<-NULL
-ENIGMA_10x<-ENIGMA_seqwell<-ENIGMA_smart<-ENIGMA_indrop<-ENIGMA_drops<-ENIGMA_same10x<-NULL
-
-bulk_var=as.matrix(bulk_var)
-for (k in 1:length(alpha.v)) {
-  alpha<-alpha.v[k]
-  ENIGMA_L2norm_pbmc_10x <- cell_deconvolve(X=log2(bulk_var+1),
-                                            theta=Fra_Simulate_10x$theta,
-                                            R=log2(ref_10x+1),
-                                            epsilon=0.001,
-                                            alpha=alpha,
-                                            beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean1=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_10x,Fraction=Fra_Simulate_10x$theta,groundtrue=single_celltype)
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean1)=paste(alpha_name,rownames(enigma.mean1),sep="-")
-  enigma.mean.10x=rbind(enigma.mean.10x,enigma.mean1)
-  
-  ENIGMA_L2norm_pbmc_seqwell <- cell_deconvolve(X=log2(bulk_var+1),
-                                                theta=Fra_Simulate_seqwell$theta,
-                                                R=log2(ref_seqwell+1),
-                                                epsilon=0.001,
-                                                alpha=alpha,
-                                                beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean2=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_seqwell,Fraction=Fra_Simulate_seqwell$theta,groundtrue=single_celltype)
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean2)=paste(alpha_name,rownames(enigma.mean2),sep="-")
-  enigma.mean.seqwell=rbind(enigma.mean.seqwell,enigma.mean2)
-  
-  ENIGMA_L2norm_pbmc_smart <- cell_deconvolve(X=log2(bulk_var+1),
-                                              theta=Fra_Simulate_smart$theta,
-                                              R=log2(ref_smart+1),
-                                              epsilon=0.001,
-                                              alpha=alpha,
-                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean3=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_smart,Fraction=Fra_Simulate_smart$theta,groundtrue=single_celltype)#
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean3)=paste(alpha_name,rownames(enigma.mean3),sep="-")
-  enigma.mean.smart=rbind(enigma.mean.smart,enigma.mean3)
-  
-  ENIGMA_L2norm_pbmc_indrop<- cell_deconvolve(X=log2(bulk_var+1),
-                                              theta=Fra_Simulate_indrop$theta,
-                                              R=log2(ref_indrop+1),
-                                              epsilon=0.001,
-                                              alpha=alpha,
-                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean4=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_indrop,Fraction=Fra_Simulate_indrop$theta,groundtrue=single_celltype)
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean4)=paste(alpha_name,rownames(enigma.mean4),sep="-")
-  enigma.mean.indrop=rbind(enigma.mean.indrop,enigma.mean4)
-  
-  ENIGMA_L2norm_pbmc_drops <- cell_deconvolve(X=log2(bulk_var+1),
-                                              theta=Fra_Simulate_drops$theta,
-                                              R=log2(ref_drops+1),
-                                              epsilon=0.001,
-                                              alpha=alpha,
-                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean5=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_drops,Fraction=Fra_Simulate_drops$theta,groundtrue=single_celltype)#
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean5)=paste(alpha_name,rownames(enigma.mean5),sep="-")
-  enigma.mean.drops=rbind(enigma.mean.drops,enigma.mean5)
-  
-  ENIGMA_L2norm_pbmc_same10x <- cell_deconvolve(X=log2(bulk_var+1),
-                                                theta=Fra_Simulate_same10x$theta,
-                                                R=log2(ref_same10x+1),
-                                                epsilon=0.001,
-                                                alpha=alpha,
-                                                beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
-  enigma.mean6=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_same10x,Fraction=Fra_Simulate_same10x$theta,groundtrue=single_celltype)#
-  alpha_name=paste("alpha",alpha,sep = "_")
-  rownames(enigma.mean6)=paste(alpha_name,rownames(enigma.mean6),sep="-")
-  enigma.mean.same10x=rbind(enigma.mean.same10x,enigma.mean6)
-}
-enigma_mean_rmbe=list(enigma.mean.10x=enigma.mean.10x, enigma.mean.indrop=enigma.mean.indrop,
-                      enigma.mean.smart=enigma.mean.smart, enigma.mean.seqwell=enigma.mean.seqwell,
-                      enigma.mean.drops=enigma.mean.drops,enigma.mean.same10x=enigma.mean.same10x)
-
-
-################### plot
-cor_alpha=do.call(rbind,enigma_mean_rmbe)
-cor_alpha=cor_alpha %>% rownames_to_column("name")
-cor_alpha$Platforms=sapply(strsplit(cor_alpha$name,"[.]"),function(x){x[[3]]})
-cor_alpha$celltype=sapply(strsplit(cor_alpha$name,"-"),function(x){x[[2]]})
-cor_alpha$alpha=rep((rep(alpha.v,each=5)),6)
- 
-pp2=ggplot(cor_alpha,aes(x=alpha,y=s,fill=Platforms,colour=Platforms))+
-  geom_point()+
-  geom_line()+theme_bw()+
-  theme(axis.title = element_text(size=13),
-        axis.text = element_text(size=10),
-        legend.text = element_text(size=9),
-        legend.title = element_text(size=10),
-        panel.grid=element_blank())+
-  ylab("Correlation per sample")+
-  facet_wrap(~celltype, nrow=2)
-pp2+scale_color_npg(alpha=0.9)+scale_x_continuous(breaks = seq(0,1,0.1))+theme(legend.position = c(0.85,0.25))
-
-
-##########################################################
-####      3.trace norm
-##########################################################
 single_celltype=readRDS("single_celltype_500s_fivecellty.rds")
 bulk_var=readRDS("bulk_var_500s_fivecellty.rds")
 top500=readRDS("top500_markergenes.rds")
@@ -516,6 +383,108 @@ Fra_Simulate_drops <- get_proportion(bulk_var[rownames(ref_drops),], ref_drops)
 Fra_Simulate_indrop <- get_proportion(bulk_var[rownames(ref_indrop),], ref_indrop)
 Fra_Simulate_same10x <- get_proportion(bulk_var[rownames(ref_same10x),], ref_same10x)
 
+##########      L2-norm 
+alpha.v <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
+enigma.mean.10x<-enigma.mean.seqwell<-enigma.mean.smart<-enigma.mean.indrop<-enigma.mean.drops<-enigma.mean.same10x<-NULL
+ENIGMA_10x<-ENIGMA_seqwell<-ENIGMA_smart<-ENIGMA_indrop<-ENIGMA_drops<-ENIGMA_same10x<-NULL
+
+bulk_var=as.matrix(bulk_var)
+for (k in 1:length(alpha.v)) {
+  alpha<-alpha.v[k]
+  ENIGMA_L2norm_pbmc_10x <- cell_deconvolve(X=bulk_var[rownames(ref_10x),],
+                                            theta=Fra_Simulate_10x$theta,
+                                            R=ref_10x,
+                                            epsilon=0.001,
+                                            alpha=alpha,
+                                            beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean1=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_10x,Fraction=Fra_Simulate_10x$theta,groundtrue=single_celltype_10x)
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean1)=paste(alpha_name,rownames(enigma.mean1),sep="-")
+  enigma.mean.10x=rbind(enigma.mean.10x,enigma.mean1)
+  
+  ENIGMA_L2norm_pbmc_seqwell <- cell_deconvolve(X=bulk_var[rownames(ref_seqwell),],
+                                                theta=Fra_Simulate_seqwell$theta,
+                                                R=ref_seqwell,
+                                                epsilon=0.001,
+                                                alpha=alpha,
+                                                beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean2=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_seqwell,Fraction=Fra_Simulate_seqwell$theta,groundtrue=single_celltype_seqwell)
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean2)=paste(alpha_name,rownames(enigma.mean2),sep="-")
+  enigma.mean.seqwell=rbind(enigma.mean.seqwell,enigma.mean2)
+  
+  ENIGMA_L2norm_pbmc_smart <- cell_deconvolve(X=bulk_var[rownames(ref_smart),],
+                                              theta=Fra_Simulate_smart$theta,
+                                              R=ref_smart,
+                                              epsilon=0.001,
+                                              alpha=alpha,
+                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean3=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_smart,Fraction=Fra_Simulate_smart$theta,groundtrue=single_celltype_smart)#
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean3)=paste(alpha_name,rownames(enigma.mean3),sep="-")
+  enigma.mean.smart=rbind(enigma.mean.smart,enigma.mean3)
+  
+  ENIGMA_L2norm_pbmc_indrop<- cell_deconvolve(X=bulk_var[rownames(ref_indrop),],
+                                              theta=Fra_Simulate_indrop$theta,
+                                              R=ref_indrop,
+                                              epsilon=0.001,
+                                              alpha=alpha,
+                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean4=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_indrop,Fraction=Fra_Simulate_indrop$theta,groundtrue=single_celltype_indrop)
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean4)=paste(alpha_name,rownames(enigma.mean4),sep="-")
+  enigma.mean.indrop=rbind(enigma.mean.indrop,enigma.mean4)
+  
+  ENIGMA_L2norm_pbmc_drops <- cell_deconvolve(X=bulk_var[rownames(ref_drops),],
+                                              theta=Fra_Simulate_drops$theta,
+                                              R=ref_drops,
+                                              epsilon=0.001,
+                                              alpha=alpha,
+                                              beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean5=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_drops,Fraction=Fra_Simulate_drops$theta,groundtrue=single_celltype_drops)#
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean5)=paste(alpha_name,rownames(enigma.mean5),sep="-")
+  enigma.mean.drops=rbind(enigma.mean.drops,enigma.mean5)
+  
+  ENIGMA_L2norm_pbmc_same10x <- cell_deconvolve(X=bulk_var[rownames(ref_same10x),],
+                                                theta=Fra_Simulate_same10x$theta,
+                                                R=ref_same10x,
+                                                epsilon=0.001,
+                                                alpha=alpha,
+                                                beta=0.3,tao_k=0.4,verbose=TRUE,Normalize=T,pos=F)
+  enigma.mean6=mean_fun(cell_decon_result=ENIGMA_L2norm_pbmc_same10x,Fraction=Fra_Simulate_same10x$theta,groundtrue=single_celltype_same10x)#
+  alpha_name=paste("alpha",alpha,sep = "_")
+  rownames(enigma.mean6)=paste(alpha_name,rownames(enigma.mean6),sep="-")
+  enigma.mean.same10x=rbind(enigma.mean.same10x,enigma.mean6)
+}
+enigma_mean_rmbe=list(enigma.mean.10x=enigma.mean.10x, enigma.mean.indrop=enigma.mean.indrop,
+                      enigma.mean.smart=enigma.mean.smart, enigma.mean.seqwell=enigma.mean.seqwell,
+                      enigma.mean.drops=enigma.mean.drops,enigma.mean.same10x=enigma.mean.same10x)
+
+
+################### plot
+cor_alpha=do.call(rbind,enigma_mean_rmbe)
+cor_alpha=cor_alpha %>% rownames_to_column("name")
+cor_alpha$Platforms=sapply(strsplit(cor_alpha$name,"[.]"),function(x){x[[3]]})
+cor_alpha$celltype=sapply(strsplit(cor_alpha$name,"-"),function(x){x[[2]]})
+cor_alpha$alpha=rep((rep(alpha.v,each=5)),6)
+ 
+pp2=ggplot(cor_alpha,aes(x=alpha,y=s,fill=Platforms,colour=Platforms))+
+  geom_point()+
+  geom_line()+theme_bw()+
+  theme(axis.title = element_text(size=13),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=9),
+        legend.title = element_text(size=10),
+        panel.grid=element_blank())+
+  ylab("Correlation per sample")+
+  facet_wrap(~celltype, nrow=2)
+pp2+scale_color_npg(alpha=0.9)+scale_x_continuous(breaks = seq(0,1,0.1))+theme(legend.position = c(0.85,0.25))
+
+
+##########################################################
+####      3.trace norm
+##########################################################
 alpha.v <- c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
 enigma.mean.10x<-enigma.mean.seqwell<-enigma.mean.smart<-enigma.mean.indrop<-enigma.mean.drops<-enigma.mean.same10x<-NULL
 ENIGMA_10x<-ENIGMA_seqwell<-ENIGMA_smart<-ENIGMA_indrop<-ENIGMA_drops<-ENIGMA_same10x<-NULL
