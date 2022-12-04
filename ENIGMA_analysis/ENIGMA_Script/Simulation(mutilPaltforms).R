@@ -463,6 +463,8 @@ enigma_mean_rmbe=list(enigma.mean.10x=enigma.mean.10x, enigma.mean.indrop=enigma
 
 
 ################### plot
+names(enigma_mean_rmbe)=c("enigma.mean.3'_end 10X","enigma.mean.inDrop","enigma.mean.Smart_seq2",
+                          "enigma.mean.Seq_Well","enigma.mean.Drops","enigma.mean.5'_end 10X")
 cor_alpha=do.call(rbind,enigma_mean_rmbe)
 cor_alpha=cor_alpha %>% rownames_to_column("name")
 cor_alpha$Platforms=sapply(strsplit(cor_alpha$name,"[.]"),function(x){x[[3]]})
