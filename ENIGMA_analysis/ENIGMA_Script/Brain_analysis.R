@@ -4,7 +4,6 @@ gc()
 setwd("/path/to/Data/ENIGMA_documents")
 load("/path/to/Data/brain_data.Rdata")
 source("/path/to/Data/ENIGMA.R")
-source("/path/to/Data/mean_fun.R")
 
 library(MIND)
 library(Biobase)
