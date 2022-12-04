@@ -205,11 +205,11 @@ pbmc.markers2 %>%
   group_by(cluster) %>%  
   top_n(n = 500, wt = avg_log2FC) -> top500_seqwell
 
-seqwell_sub_eset=ExpressionSet(as.matrix(GetAssayData(seqwell_sub)[top500_seqwell$gene %>% unique(),]))
+seqwell_sub_eset=ExpressionSet(as.matrix(GetAssayData(seqwell_sub)))
 pData(seqwell_sub_eset)=metadata
 ##remove batch effect
 ref_seqwell_rmbe=remove_batch_effect(ExpressionSet(bulk_var),seqwell_sub_eset,"cell.type.coarse", n_pseudo_bulk=5000)
-saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe_500s.rds")
+saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe.rds")
 
 #######
 ##Data could be downloaded from https://singlecell.broadinstitute.org/single_cell/study/SCP424/single-cell-comparison-pbmc-data?cluster=Harmony%20TSNE&spatialGroups=--&annotation=Experiment--group--study&subsample=all#study-download
@@ -258,7 +258,7 @@ Drop=ExpressionSet(as.matrix(GetAssayData(sixplat_sub)))
 pData(Drop)=cellid
 ##remove batch effect
 ref_drop_rmbe=remove_batch_effect(ExpressionSet(bulk_var),Drop,"CellType_group", n_pseudo_bulk=5000)
-saveRDS(ref_drop_rmbe,"ref_drop_rmbe_500s.rds")
+saveRDS(ref_drop_rmbe,"ref_drop_rmbe.rds")
 
 ########1.2.3 ref three:10x 3'-end
 cellid=sixplat@meta.data[sixplat@meta.data$orig.ident=="pbmc1"&sixplat@meta.data$Method_group=="10x Chromium (v2) B",]
@@ -274,7 +274,7 @@ pbmc.markers2 %>%
 x10=ExpressionSet(as.matrix(GetAssayData(sixplat_sub)))
 pData(x10)=cellid
 ref_10x_rmbe=remove_batch_effect(ExpressionSet(bulk_var),x10,"CellType_group", n_pseudo_bulk=5000)
-saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe_500s.rds")
+saveRDS(ref_seqwell_rmbe,"ref_seqwell_rmbe.rds")
 
 ########1.2.4 ref four:inDrops
 cellid=sixplat@meta.data[sixplat@meta.data$orig.ident=="pbmc2"&sixplat@meta.data$Method_group=="inDrops",]
@@ -290,7 +290,7 @@ pbmc.markers2 %>%
 inDrops=ExpressionSet(as.matrix(GetAssayData(sixplat_sub)))
 pData(inDrops)=cellid
 ref_inDrops_rmbe=remove_batch_effect(ExpressionSet(bulk_var),inDrops,"CellType_group", n_pseudo_bulk=5000)
-saveRDS(ref_inDrops_rmbe,"ref_indrop_rmbe_500s.rds")
+saveRDS(ref_inDrops_rmbe,"ref_indrop_rmbe.rds")
 
 ########1.2.5 ref five:Smart-seq2
 cellid=sixplat@meta.data[sixplat@meta.data$orig.ident=="pbmc2"&sixplat@meta.data$Method_group=="Smart-seq2",]
@@ -306,7 +306,7 @@ pbmc.markers2 %>%
 Smart=ExpressionSet(as.matrix(GetAssayData(sixplat_sub)))
 pData(Smart)=cellid
 ref_Smart_rmbe=remove_batch_effect(ExpressionSet(bulk_var),Smart,"CellType_group", n_pseudo_bulk=5000)
-saveRDS(ref_Smart_rmbe,"ref_smart_rmbe_500s.rds")
+saveRDS(ref_Smart_rmbe,"ref_smart_rmbe.rds")
 
 #######1.2.6 ref six: same 10x 5'-end
 ##
@@ -329,7 +329,7 @@ pbmc.markers2 %>%
 pbmc13_sub_eset=ExpressionSet(as.matrix(GetAssayData(pbmc13_sub)))
 pData(pbmc13_sub_eset)=metadata
 ref_same10x_rmbe=remove_batch_effect(ExpressionSet(bulk_var),pbmc13_sub_eset,"majorType", n_pseudo_bulk=5000,ncores = 4)
-saveRDS(ref_same10x_rmbe,"./ref_same10x_rmbe_500s.rds")
+saveRDS(ref_same10x_rmbe,"./ref_same10x_rmbe.rds")
 
 top500=list(top500_drop,top500_indrop,top500_seqwell,top500_smart,top500_x10,top500_same10x)
 names(top500)=c('top500_drop','top500_indrop','top500_seqwell','top500_smart','top500_x10','top500_same10x')
