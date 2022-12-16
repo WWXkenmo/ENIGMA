@@ -1,5 +1,5 @@
 ### ENIGMA analysis
-To reproduce main parts of the simulations and analysis results in our manuscript, here we give several example code for data simulation and analysis.
+To reproduce ***main parts*** of the simulations and analysis results in our manuscript, here we give several example code for data simulation and analysis.
 tips:
 1. Before users run following example, user need to source the ENIGMA code at first
 ```
@@ -14,6 +14,13 @@ Both scripts could be downloaded through following links:
 [ENIGMA.R](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/ENIGMA.R)
 
 [DEG_analysis_uile_function.R](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis_uile_function.R)
+
+## Quick start for using ENIGMA as package
+To use ENIGMA as package on your datasets, download package through
+```
+devtools::install_github("WWXKenmo/ENIGMA")
+```
+
 
 ## Code for main text
 ### Simulation analysis
