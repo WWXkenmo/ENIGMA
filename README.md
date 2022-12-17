@@ -1,6 +1,7 @@
 ## DEconvolution based on Regularized Matrix Completion algorithm (ENIGMA)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5907208.svg)](https://doi.org/10.5281/zenodo.5907208)
 
+**warnings: the package in Zenodo is no longer updated, please install the newest version!**
 
 <img src="https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Fig.1.png" alt="ENIGMA" width="600" />
 
@@ -19,6 +20,7 @@ install the newest version of ENIGMA
 ```
 devtools::install_github("WWXKenmo/ENIGMA_test")
 ```
+
 ## Notes for usage
 ### When user need to conduct sample-level score calculation (e.g. Gene Set Activity Analysis (GSVA)) and each sample will be treated independently, please used unnormalized CSE profile
 
