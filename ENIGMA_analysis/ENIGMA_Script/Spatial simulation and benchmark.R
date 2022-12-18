@@ -11,7 +11,7 @@ library(sceasy)
 library(anndata)
 ########################### Load Simulation dataset ############################
 ### structed simulation
-dataset <- readRDS("dataset_structed.rds")
+dataset <- readRDS("ST_data.rds")
 Bulk = dataset$mixture %>% as.matrix()
 ### Build deconvolution profile
 metadata = dataset$ref_sc_metadata
