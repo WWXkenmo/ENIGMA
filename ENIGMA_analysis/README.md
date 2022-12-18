@@ -29,7 +29,8 @@ devtools::install_github("WWXKenmo/ENIGMA")
 * [Using scRNA-seq data of melanoma to simulate pseudo-bulk sample and perform deconvolution (Fig2b)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
 * [Using scRNA-seq data of mouse mammary tissue to simulate spatial transcriptome and perform deconvolution (Fig2c)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Spatial%20simulation%20and%20benchmark.R)
-   [spatial transcriptome simulation](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulate.R)
+   
+  [spatial transcriptome simulation](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulate.R)
 
 * [Deconvolve NSCLC datasets with scRNA-seq datasets as reference (Fig2d)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NSCLC_test.R)
 
