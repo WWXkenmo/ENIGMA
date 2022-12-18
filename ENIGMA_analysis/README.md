@@ -24,7 +24,7 @@ devtools::install_github("WWXKenmo/ENIGMA")
 
 ## Code for main text
 ### Simulation analysis
-* [Using snRNA-seq data of ASD patients to simulate pseudo-bulk sample and perform deconvolution (Fig2a)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
+* [Using snRNA-seq data of ASD patients to simulate pseudo-bulk sample and perform deconvolution (Fig2a)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Brain_analysis.R)
 
 * [Using scRNA-seq data of melanoma to simulate pseudo-bulk sample and perform deconvolution (Fig2b)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
