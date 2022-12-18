@@ -24,11 +24,11 @@ devtools::install_github("WWXKenmo/ENIGMA")
 
 ## Code for main text
 ### Simulation analysis
-* [Using snRNA-seq data of ASD patients to simulate pseudo-bulk sample and perform deconvolution (Fig2a)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(Seq-Well%20scRNA-seq).R)
+* [Using snRNA-seq data of ASD patients to simulate pseudo-bulk sample and perform deconvolution (Fig2a)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
-* [Using scRNA-seq data of melanoma to simulate pseudo-bulk sample and perform deconvolution (Fig2b)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(Seq-Well%20scRNA-seq).R)
+* [Using scRNA-seq data of melanoma to simulate pseudo-bulk sample and perform deconvolution (Fig2b)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(scRNA-seq).R)
 
-* [Using scRNA-seq data of mouse mammary tissue to simulate spatial transcriptome and perform deconvolution (Fig2c)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation(Seq-Well%20scRNA-seq).R)
+* [Using scRNA-seq data of mouse mammary tissue to simulate spatial transcriptome and perform deconvolution (Fig2c)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/)
 
 * [Deconvolve NSCLC datasets with scRNA-seq datasets as reference (Fig2d)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/NSCLC_test.R)
 
