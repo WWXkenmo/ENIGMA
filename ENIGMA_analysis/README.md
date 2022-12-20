@@ -1,4 +1,6 @@
 ### ENIGMA analysis
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7462559.svg)](https://doi.org/10.5281/zenodo.7462559)
+
 To reproduce ***main parts*** of the simulations and analysis results in our manuscript, here we give several example code for data simulation and analysis.
 tips:
 1. Before users run following example, user need to source the ENIGMA code at first
@@ -40,12 +42,12 @@ devtools::install_github("WWXKenmo/ENIGMA")
 
 * [Simulate cell type-specific gene expression profile to assess CTS-DEGs detection accuracy](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/Simulation%20(DEG).R)
 
-  [Benchmark CTS-DEG detection performance (Fig3, Supp Fig S8)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis.R)
+  [Benchmark CTS-DEG detection performance (Fig4, Supp Fig S8)](https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/ENIGMA_Script/DEG_analysis.R)
 
 ### Real Data analysis
-#### Deconvolution analysis for arthritis patients(Fig4, HTML format): 
+#### Deconvolution analysis for arthritis patients(Fig5, HTML format): 
 * [link](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/RA/Deconvolution-Analysis-for-Arthritis-Patients2.html)
-#### Deconvolution analysis for T2D patients(Fig5, HTML format): 
+#### Deconvolution analysis for T2D patients(Fig6, HTML format): 
 * [Part-1](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/The-deconvolution-analysis-in-pancreas-islet-tissues.html)
 * [Part-2](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/main/ENIGMA_analysis/Real_Data_Analysis/pancreas/Beta-cell-type-specific-network-in-pancreas-islet-tissues.html)
 
