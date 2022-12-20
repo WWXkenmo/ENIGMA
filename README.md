@@ -67,6 +67,7 @@ we have implement the ENIGMA algorithm in python for those people who want to us
 Please refer to the [document](https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/A-simple-guide-of-ENIGMA.pdf) of ENIGMA for detailed guidence using ENIGMA as a R package.
 [link to example datasets](https://github.com/WWXkenmo/ENIGMA/tree/master)
 ## Tutorial
+* [Using ENIGMA to estimate CSE in brain tissue](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/brain_tutorial.html)
 * [Apply ENIGMA to resolve latent cell states](https://htmlpreview.github.io/?https://github.com/WWXkenmo/ENIGMA/blob/master/vignettes/Identify-cell-type-specific-cell-states.html)
 
 ## Note
